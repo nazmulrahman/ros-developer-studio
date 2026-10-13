@@ -1,0 +1,12 @@
+# Progress checklist
+- [x] Phase 1 — reference analysis, feature matrix, architecture
+- [x] Scaffold — FastAPI, agent stubs, React/TS/Vite shell, Graphite Dark
+- [x] M1 Agent + graph discovery — implemented; fake-ROS tests; **rclpy path unverified**
+- [x] M2 ROS Explorer — implemented; UI not browser-tested
+- [x] M3 Topic Inspector + frequency — implemented; same caveats
+- [x] M4 Signals plotting (uPlot, zoom/pan, CSV) — implemented; UI not browser-tested
+- [x] M5 Host Metrics — implemented; Jetson sysfs unverified
+- [x] M6 Overview + UI improvements — implemented
+- [ ] Verification on a real ROS 2 system (Humble/Jazzy) with demo nodes  ← **next, needs your robot/PC**
+- [ ] Phase 3 — Motion, Visualizations, TF, saved layouts
+- [ ] Phase 4 — Bag Studio · Phase 5 — Diagnostics · Phase 6 — Test Tools, installer, perf

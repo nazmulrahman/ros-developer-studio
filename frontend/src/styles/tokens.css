@@ -1,0 +1,11 @@
+/* Graphite Dark — only place colours are defined. */
+:root {
+  --bg: #11161D; --panel: #1B242E; --border: #303E4C;
+  --accent: #49B6E8; --text: #EAF2FA; --text-2: #93A6B7;
+  --ok: #34C995; --warn: #F5AD57; --err: #EF6464;
+  --panel-hover: #223040; --accent-dim: rgba(73,182,232,.14);
+  --font-ui: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --radius: 4px; --gap: 8px; --pad: 10px; --row: 26px;
+  --topbar-h: 36px; --sidebar-w: 200px; --sidebar-w-collapsed: 44px;
+}

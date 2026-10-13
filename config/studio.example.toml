@@ -1,0 +1,15 @@
+# Copy to config/studio.toml. Everything here is optional.
+[server]
+host = "127.0.0.1"        # LAN access requires an explicit change, e.g. "0.0.0.0"
+port = 8800
+[agent]
+url = "ws://127.0.0.1:8770"
+[bags]
+directories = ["~/ros_bags"]   # only these directories are browsable/openable
+record_dir = "~/ros_bags"
+[limits]
+topic_buffer_messages = 2000
+topic_buffer_bytes = 33554432
+stats_window_s = 5.0
+[test_tools]
+enabled = false           # must also be enabled at runtime with explicit confirmation
