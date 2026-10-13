@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from ..data_sources.live import AgentClient, AgentError, AgentUnavailable
 from .config import Settings
 from .models import Mode
+from .tf_tree import TfTree
 
 log = logging.getLogger("hub")
 
@@ -47,6 +48,7 @@ class LiveHub:
         self.host_desired: float | None = None
         self.dropped_total = 0
         self.tf_previews: dict[str, dict] = {}
+        self.tf_tree = TfTree()
 
     # ---------- lifecycle
     async def start(self):
@@ -56,6 +58,7 @@ class LiveHub:
 
     async def stop(self):
         self.tf_previews.clear()
+        self.tf_tree.clear()
         if self.agent:
             await self.agent.stop()
             self.agent = None
@@ -90,6 +93,7 @@ class LiveHub:
     async def _on_state(self, state: str):
         if state != "connected":
             self.tf_previews.clear()
+            self.tf_tree.clear()
         if state == "connected":
             await self._resync()
         self._broadcast(self.status_event())
@@ -107,6 +111,8 @@ class LiveHub:
         if ch == "sample":
             if ev["topic"] in self.desired and ev.get("type") == "tf2_msgs/msg/TFMessage" and "visual" in ev:
                 self.tf_previews[ev["topic"]] = ev
+                if self.tf_tree.ingest(ev):
+                    self._broadcast({"ch": "tf", "data": self.tf_tree.snapshot()})
             now = time.monotonic()
             for c in list(self.clients):
                 w = c.watches.get(ev["topic"])

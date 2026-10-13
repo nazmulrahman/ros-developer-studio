@@ -18,5 +18,6 @@ assert.equal(mappingList([widget,widget]), false);
 assert.equal(mappingList([{...widget,measured:{topic:'/any',path:'data[]'}}]), false);
 assert.equal(mappingList({}), false);
 assert.equal(visualList([{id:'a',topic:'/cam',type:'sensor_msgs/msg/Image'}]), true);
+assert.equal(visualList([{id:'tf',topic:'@tf-tree',type:'studio/TFFrameTree'}]), true);
 assert.equal(visualList([{id:'a',topic:'/cam',type:'unknown'}]), false);
 console.log('Domain checks passed: orientation, bounded buffers, invalid values and saved layout validation.');

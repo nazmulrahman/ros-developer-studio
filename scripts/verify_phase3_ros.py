@@ -40,9 +40,11 @@ def main():
     odom = Odometry(); odom.pose.pose.orientation.w = 1.0; odom.child_frame_id = "test_base"; messages["odom"] = odom
     twist = Twist(); twist.linear.x = 0.4; messages["feedback"] = twist
     pubs = {key: node.create_publisher(type(msg), "/studio_test/" + key, 10) for key, msg in messages.items()}
-    tf = TFMessage(); transform = TransformStamped(); transform.header.frame_id = "test_world"; transform.child_frame_id = "test_base"; transform.transform.rotation.w = 1.0; tf.transforms = [transform]
-    static_pub = node.create_publisher(TFMessage, "/studio_test/static_frames", QoSProfile(depth=1, durability=QoSDurabilityPolicy.TRANSIENT_LOCAL))
-    static_pub.publish(tf)  # published before any subscriber exists
+    static_tf = TFMessage(); transform = TransformStamped(); transform.header.frame_id = "test_world"; transform.child_frame_id = "test_base"; transform.transform.rotation.w = 1.0; static_tf.transforms = [transform]
+    dynamic_tf = TFMessage(); moving = TransformStamped(); moving.header.frame_id = "test_base"; moving.child_frame_id = "test_camera"; moving.transform.rotation.w = 1.0; dynamic_tf.transforms = [moving]
+    tf_pub = node.create_publisher(TFMessage, "/tf", 10)
+    static_pub = node.create_publisher(TFMessage, "/tf_static", QoSProfile(depth=1, durability=QoSDurabilityPolicy.TRANSIENT_LOCAL))
+    static_pub.publish(static_tf)  # published before any subscriber exists
     stop = threading.Event()
     def emit():
         while not stop.wait(0.05):
@@ -52,6 +54,7 @@ def main():
                 if hasattr(msg, "header"):
                     msg.header.stamp = node.get_clock().now().to_msg(); msg.header.frame_id = "test_world"
                 pubs[key].publish(msg)
+            moving.header.stamp = node.get_clock().now().to_msg(); tf_pub.publish(dynamic_tf)
     producer = threading.Thread(target=emit, daemon=True); producer.start()
     agent = AgentThread(ros).start(); backend = BackendThread(f"ws://127.0.0.1:{agent.port}")
     try:
@@ -64,23 +67,25 @@ def main():
             assert params.status_code == 200, params.text
             assert any(p["value"] == "Synthetic test data; no robot connected" for p in params.json()["parameters"])
             browser = Browser(connect(backend.ws_url))
-            for topic in list(messages) + ["static_frames"]:
-                browser.send(op="watch", topic="/studio_test/" + topic, hz=2, visual=True)
+            for topic in ["/studio_test/" + key for key in messages] + ["/tf", "/tf_static"]:
+                browser.send(op="watch", topic=topic, hz=2, visual=True)
             samples = {}
             end = time.monotonic() + 10
-            while len(samples) < 7 and time.monotonic() < end:
+            while len(samples) < 8 and time.monotonic() < end:
                 event = browser.wait(lambda e: e["ch"] in ("sample", "watch_error"), timeout=5)
                 assert event["ch"] == "sample", event
                 assert "error" not in event.get("visual", {}), event
                 samples[event["topic"]] = event
-            assert len(samples) == 7, samples.keys()
+            assert len(samples) == 8, samples.keys()
             assert samples["/studio_test/camera"]["visual"]["width"] == 320
-            assert samples["/studio_test/static_frames"]["visual"]["data"]["transforms"][0]["child_frame_id"] == "test_base"
+            assert samples["/tf_static"]["visual"]["data"]["transforms"][0]["child_frame_id"] == "test_base"
             assert samples["/studio_test/imu"]["stamps"]["header_ns"] is not None
             late = Browser(connect(backend.ws_url))
-            late.send(op="watch", topic="/studio_test/static_frames", hz=2, visual=True)
+            late.send(op="watch", topic="/tf_static", hz=2, visual=True)
             cached = late.wait(lambda e: e["ch"] == "sample", timeout=3)
             assert cached["visual"]["data"]["transforms"][0]["child_frame_id"] == "test_base"
+            merged = http.get("/api/live/tf").json()
+            assert merged["roots"] == ["test_world"] and {edge["child"] for edge in merged["edges"]} == {"test_base", "test_camera"}
             late.close(); browser.close()
             print("PASS: Humble real graph, namespaced read-only parameters, camera, scan, IMU, battery, odometry, Twist and late static TF.", flush=True)
             print(f"Synthetic test fixture UI: {backend.url} · test token: tok · isolated ROS domain 187", flush=True)

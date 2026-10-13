@@ -36,6 +36,15 @@ Not covered: browser/backend restart behaviour of the UI (reconnect logic is unt
 - `.venv/bin/python -m scripts.verify_phase3_ros`: **real ROS 2 Humble**, Python 3.10, CycloneDDS, loopback, isolated domain 187. Synthetic Image/LaserScan/Imu/BatteryState/Odometry/Twist/TFMessage publishers feed the real agent and backend. Verified namespaced parameter reads, separate header/receive clocks and retained static transforms published before subscription. This caught a static-TF reliability issue and the corrected run passed.
 - Browser exercised against that synthetic ROS fixture: mapped feedback displayed 0.400 m/s; camera image decoded, scan rendered 360 rays, battery displayed 75%, IMU orientation/acceleration rendered, odometry trace rendered and TF frame relationship appeared. Parameter `fixture_label` was visible in Explorer. Saved a layout, removed its Motion widget, then restored the layout and saw the widget return. No browser errors/warnings during these checks. Narrow-window header overflow was corrected.
 
-These are synthetic integration checks, not hardware acceptance. The user separately confirmed Phase 2 discovery and messages in their demo-node run. Jazzy, Pi/Jetson, sustained resource measurements, full TF completeness, camera depth encodings and Phase 4 offline bags are **not verified**. Raw camera and JPEG/PNG error/resize handling have unit coverage; the live smoke fixture uses RGB8. The TF UI intentionally makes no complete-tree or transform-validity claim.
+These are synthetic integration checks, not hardware acceptance. The user separately confirmed Phase 2 discovery and messages in their demo-node run. Jazzy, Pi/Jetson, sustained resource measurements, camera depth encodings and Phase 4 offline bags are **not verified**. Raw camera and JPEG/PNG error/resize handling have unit coverage; the live smoke fixture uses RGB8.
+
+## Phase 3 completion — unified TF and Package Explorer
+
+- `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q`: **55 passed**. The suite now includes merged static/dynamic TF topology, roots, disconnected groups, stale edges, invalid rotations, multiple parents, cycles, bounded retention, Package Explorer safety, folder selection and persisted workspace roots.
+- `cd frontend && npm test && npm run build`: passed. TF canvas and Package Explorer remain split into on-demand production chunks.
+- `.venv/bin/python -m scripts.verify_phase3_ros`: passed on real ROS 2 Humble in isolated domain 187. `/tf_static` published before subscription and live `/tf` merged into `test_world → test_base → test_camera`; the authenticated `/api/live/tf` result matched.
+- Browser acceptance showed three frames, two transforms, one root/group, no findings, working frame search, and no browser warnings or errors.
+
+This completes Phase 3 functionality. Robot/Jazzy and Pi/Jetson checks remain release acceptance because those environments were not available locally.
 
 The smoke script sets its domain/localhost/log/preferences environment before importing ROS and cleans up its publishers, agent and backend on exit. `--serve` keeps it running for browser checks until interrupted. Do not treat this synthetic fixture as robot telemetry.

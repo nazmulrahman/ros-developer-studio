@@ -8,6 +8,7 @@ import pytest
 from agent.subscriptions.visual import preview, stamp
 from agent.subscriptions.monitor import Monitor, Watch
 from backend.core.preferences import PreferenceStore, Preferences, Layout
+from backend.core.tf_tree import TfTree
 from fastapi import HTTPException
 
 
@@ -122,6 +123,36 @@ def test_layout_and_preferences_api_are_authenticated_and_persisted(tmp_path, mo
         assert client.delete("/api/layouts/" + item["id"], headers=headers).status_code == 404
 
 
+def test_tf_tree_merges_topics_and_reports_structural_problems():
+    tree = TfTree()
+    def event(topic, rows, received="10000000000"):
+        return {"topic": topic, "t_ns": int(received), "stamps": {"receive_ns": received},
+                "visual": {"data": {"transforms": rows}}}
+    def transform(parent, child, quaternion=None):
+        return {"header": {"frame_id": parent, "stamp": {"sec": 9, "nanosec": 0}}, "child_frame_id": child,
+                "transform": {"translation": {"x": 1.0, "y": 0.0, "z": 0.0},
+                              "rotation": quaternion or {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0}}}
+    assert tree.ingest(event("/tf_static", [transform("map", "odom")]))
+    tree.ingest(event("/tf", [transform("odom", "base"), transform("other", "base")], "14000000000"))
+    tree.ingest(event("/tf", [transform("island", "sensor", {"x": 0.0, "y": 0.0, "z": 0.0, "w": 0.0})]))
+    snapshot = tree.snapshot(now_ns=15_000_000_000, stale_after_s=3)
+    assert snapshot["frames"] == ["base", "island", "map", "odom", "other", "sensor"]
+    assert snapshot["roots"] == ["island", "map", "other"]
+    assert next(edge for edge in snapshot["edges"] if edge["child"] == "odom")["static"] is True
+    codes = {finding["code"] for finding in snapshot["diagnostics"]}
+    assert {"multiple_parents", "disconnected", "rotation", "stale"} <= codes
+
+
+def test_tf_tree_detects_cycles_and_bounds_edges():
+    tree = TfTree(limit=2)
+    rows = []
+    for parent, child in (("a", "b"), ("b", "a"), ("x", "y")):
+        rows.append({"header": {"frame_id": parent}, "child_frame_id": child,
+                     "transform": {"rotation": {"x": 0, "y": 0, "z": 0, "w": 1}}})
+    tree.ingest({"topic": "/tf", "t_ns": 1, "visual": {"data": {"transforms": rows}}})
+    assert len(tree.snapshot(now_ns=1)["edges"]) == 2
+    full = TfTree(); full.ingest({"topic": "/tf", "t_ns": 1, "visual": {"data": {"transforms": rows[:2]}}})
+    assert any(finding["code"] == "cycle" for finding in full.snapshot(now_ns=1)["diagnostics"])
 def test_parameter_failures_do_not_mutate_ros(stack):
     stack.ros.parameters = lambda name: {"node": name, "parameters": [{"name": "speed", "type": 3, "value": 1.2}], "truncated": False}
     result = stack.http.get("/api/live/parameters", params={"name": "/ns/node"})

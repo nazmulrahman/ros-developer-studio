@@ -71,7 +71,10 @@ async def node_parameters_path(request: Request, node: str):
     return await agent_call(request, "node.parameters", {"name": "/" + node.lstrip("/")})
 
 @router.get("/live/tf")
-def live_tf(): not_implemented(3, "TF tree")
+def live_tf(request: Request):
+    """Merged current TF hierarchy observed from watched TFMessage topics."""
+    stale_after = request.app.state.preferences.read()["preferences"]["stale_after_s"]
+    return request.app.state.hub.tf_tree.snapshot(stale_after_s=stale_after)
 
 @router.get("/live/logs")
 def live_logs(level: str | None = None, limit: int = 500): not_implemented(5, "/rosout log buffer")

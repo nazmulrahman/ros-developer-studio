@@ -33,7 +33,7 @@ def test_session_defaults_are_read_only(client):
 
 
 @pytest.mark.parametrize("method,path", [
-    ("get", "/api/live/tf"), ("get", "/api/host/processes"), ("get", "/api/bags"), ("get", "/api/record/status"), ("get", "/api/diagnostics/findings"),
+    ("get", "/api/host/processes"), ("get", "/api/bags"), ("get", "/api/record/status"), ("get", "/api/diagnostics/findings"),
 ])
 def test_unimplemented_returns_501_not_fake_data(client, method, path):
     r = getattr(client, method)(path, headers=H)

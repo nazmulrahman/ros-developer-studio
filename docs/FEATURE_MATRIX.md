@@ -23,7 +23,7 @@ Legend — **Preserved**: same behaviour kept · **Improved**: kept and extended
 | 13 | Camera (CompressedImage) | canvas | Improved | CompressedImage + raw Image, server-side downscale/rate limit | 3 | ☐ |
 | 14 | Odometry plot / trajectory | `/odom` | Preserved | Odometry adapter | 3 | ☐ |
 | 15 | ROS Graph | rosapi nodes/details, list view | Improved | Nodes↔topics graph view, filters, search, QoS, actions | 2 | ◐ fake-ROS tests |
-| 16 | TF Tree | `/tf` `/tf_static` parse | Improved | TF tree + missing-transform and multi-publisher hints | 3 | ☐ |
+| 16 | TF Tree | `/tf` `/tf_static` parse | Improved | Merged hierarchy, roots/groups, transform details, stale/cycle/multiple-parent/invalid-rotation diagnostics | 3 | ✔ Humble fixture + browser |
 | 17 | Diagnostics page | `/diagnostics` + stale hints | Improved | Findings with severity/evidence/causes/checks; traceable to data | 5 | ☐ |
 | 18 | Logs | `/rosout` buffer | Preserved | Bounded log view, level filter, search | 5 | ☐ |
 | 19 | Host Resources | `host_metrics.py` → String topic | Replaced | Agent collector served over backend (no ROS topic). Adds per-core charts, uptime, processes, disk free, Jetson telemetry. Labeled with host name | 2 (basic) / 5 | ◐ fake-ROS tests |
@@ -83,7 +83,7 @@ The user confirmed Phase 2 topic discovery/live messages in their demo-node run.
 |---|---|---|
 | 9 | Configurable Motion widgets and measured/reference plots | Up to 16 widgets; no geometry inference, unit conversion or cross-topic synchronization; generic numeric motor status only |
 | 10–14 | IMU, scan, battery, camera and odometry viewers | Standard supported encodings; bounded sampled previews; no depth image rendering |
-| 16 | Partial TF relationship inspection | Per-topic observed edges, retained static delivery when offered; full merged TF hierarchy/lookup and diagnostic rules remain unfinished |
+| 16 | Unified TF hierarchy and diagnostics | Merges watched TFMessage topics, retains late static delivery, and reports structural/age/rotation faults; bounded observation model rather than historical TF2 lookup |
 | 21 | Read-only parameter inspection | Up to 500 names; bounded values, 3-second service timeout |
 | 35 | Settings + backend saved workspace layouts | Sampling/freshness settings and widget/series definitions; no credentials, live data, window geometry or dock layout |
 

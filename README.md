@@ -2,7 +2,7 @@
 
 Universal ROS 2 (Humble/Jazzy) monitoring and analysis tool. Read-only by default. Independent of any robot package.
 
-**Status:** Phase 2's demo-node run is confirmed by the user. The Phase 3 working increment adds Motion field mappings, sensor previews, TF frame inspection, read-only parameters, Settings and saved layouts. ROS 2 Package Explorer now adds safe workspace discovery, source browsing, dependency/launch architecture graphs, saved layouts, and live/static comparison. Combined TF inspection, robot/Jazzy acceptance and Phases 4–6 remain unfinished. See `PROGRESS.md`, `docs/TESTING.md`, and `docs/PACKAGE_EXPLORER.md`.
+**Status:** Phase 2's demo-node run is confirmed by the user. Phase 3 functionality is complete: Motion field mappings, sensor previews, unified TF hierarchy and diagnostics, read-only parameters, Settings, saved layouts, and ROS 2 Package Explorer. Humble synthetic ROS and browser acceptance pass; robot/Jazzy and Pi/Jetson release acceptance remain. Phases 4–6 remain unfinished. See `PROGRESS.md`, `docs/TESTING.md`, and `docs/PACKAGE_EXPLORER.md`.
 
 ## Install
 Needs Python ≥ 3.10 and Node ≥ 18. **Use a virtual environment** (Ubuntu 22.04 ships pydantic 1.x, which is too old):

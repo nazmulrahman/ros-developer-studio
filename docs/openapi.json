@@ -525,6 +525,7 @@
      "live"
     ],
     "summary": "Live Tf",
+    "description": "Merged current TF hierarchy observed from watched TFMessage topics.",
     "operationId": "live_tf_api_live_tf_get",
     "responses": {
      "200": {
@@ -1430,6 +1431,320 @@
     }
    }
   },
+  "/api/package-explorer/roots": {
+   "get": {
+    "tags": [
+     "package-explorer"
+    ],
+    "summary": "Roots",
+    "operationId": "roots_api_package_explorer_roots_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   },
+   "post": {
+    "tags": [
+     "package-explorer"
+    ],
+    "summary": "Add Root",
+    "operationId": "add_root_api_package_explorer_roots_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/WorkspaceRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
+  "/api/package-explorer/browse": {
+   "get": {
+    "tags": [
+     "package-explorer"
+    ],
+    "summary": "Browse",
+    "operationId": "browse_api_package_explorer_browse_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "path",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Path"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/package-explorer/scan": {
+   "post": {
+    "tags": [
+     "package-explorer"
+    ],
+    "summary": "Scan",
+    "operationId": "scan_api_package_explorer_scan_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/WorkspaceRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
+  "/api/package-explorer/file": {
+   "get": {
+    "tags": [
+     "package-explorer"
+    ],
+    "summary": "Source File",
+    "operationId": "source_file_api_package_explorer_file_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "workspace",
+      "in": "query",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Workspace"
+      }
+     },
+     {
+      "name": "path",
+      "in": "query",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Path"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/package-explorer/layouts/{workspace_id}": {
+   "get": {
+    "tags": [
+     "package-explorer"
+    ],
+    "summary": "Get Layout",
+    "operationId": "get_layout_api_package_explorer_layouts__workspace_id__get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "workspace_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Workspace Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "put": {
+    "tags": [
+     "package-explorer"
+    ],
+    "summary": "Save Layout",
+    "operationId": "save_layout_api_package_explorer_layouts__workspace_id__put",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "workspace_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Workspace Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/WorkspaceLayout"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
   "/api/testtools/state": {
    "get": {
     "tags": [
@@ -2176,6 +2491,68 @@
      "duration_s"
     ],
     "title": "VelocityTestRequest"
+   },
+   "WorkspaceLayout": {
+    "properties": {
+     "workspace_id": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{24}$",
+      "title": "Workspace Id"
+     },
+     "mode": {
+      "type": "string",
+      "pattern": "^(dependencies|architecture|launch|live|comparison)$",
+      "title": "Mode",
+      "default": "dependencies"
+     },
+     "viewport": {
+      "additionalProperties": {
+       "type": "number"
+      },
+      "type": "object",
+      "title": "Viewport"
+     },
+     "positions": {
+      "additionalProperties": {
+       "additionalProperties": {
+        "type": "number"
+       },
+       "type": "object"
+      },
+      "type": "object",
+      "title": "Positions"
+     },
+     "groups": {
+      "items": {
+       "additionalProperties": true,
+       "type": "object"
+      },
+      "type": "array",
+      "title": "Groups"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "workspace_id"
+    ],
+    "title": "WorkspaceLayout"
+   },
+   "WorkspaceRequest": {
+    "properties": {
+     "path": {
+      "type": "string",
+      "maxLength": 4096,
+      "minLength": 1,
+      "title": "Path"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "path"
+    ],
+    "title": "WorkspaceRequest"
    }
   },
   "securitySchemes": {
