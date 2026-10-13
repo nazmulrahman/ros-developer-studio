@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import uPlot from "uplot";
+import { Icon } from "../components/Icon";
 import { Gate } from "../components/Gate";
 import { Empty, Notice } from "../components/ui";
 import { Plot } from "../plots/Plot";
@@ -161,21 +162,21 @@ export function SignalsPage() {
                     ? (idx?.path === f.path
                       ? <><input className="mono" style={{ width: 52 }} value={idx.value} onChange={e => setIdx({ path: f.path, value: e.target.value.replace(/\D/g, "") })} autoFocus placeholder="index" />
                         <button disabled={idx.value === ""} onClick={() => add(f, f.path.split("[]").join(`[${idx.value}]`))}>Add</button></>
-                      : <button onClick={() => setIdx({ path: f.path, value: "0" })} title="Array element: choose an index">＋[ ]</button>)
-                    : <button onClick={() => add(f, f.path)} disabled={series.some(s => s.topic === topic && s.path === f.path)}>＋</button>}
+                      : <button onClick={() => setIdx({ path: f.path, value: "0" })} title="Array element: choose an index"><Icon name="plus" size={13} />[ ]</button>)
+                    : <button onClick={() => add(f, f.path)} disabled={series.some(s => s.topic === topic && s.path === f.path)} title="Add to plot"><Icon name="plus" size={14} /></button>}
                 </div>)}
               </div></>}
             {!topic && <Empty title="Choose a topic">Pick a topic, then add numeric fields to plot.</Empty>}
           </div>
           <div style={{ overflow: "auto" }}>
             <div className="row2">
-              <button onClick={() => { setPaused(p => !p); }}>{paused ? "▶ Resume" : "⏸ Pause"}</button>
-              <button onClick={clear}>Clear</button>
+              <button onClick={() => { setPaused(p => !p); }}><Icon name={paused ? "play" : "pause"} />{paused ? "Resume" : "Pause"}</button>
+              <button onClick={clear}><Icon name="trash" />Clear</button>
               <label className="muted">Window <select value={windowS} onChange={e => { setWindowS(Number(e.target.value)); setView(null); }}>{WINDOWS.map(w => <option key={w} value={w}>{w >= 60 ? `${w / 60} min` : `${w} s`}</option>)}</select></label>
               <label className="muted">Sampling <select value={rate} onChange={e => setRate(Number(e.target.value))}>{RATES.map(r => <option key={r} value={r}>{r} Hz</option>)}</select></label>
-              <button onClick={() => pan(-1)} title="Pan back">◀</button><button onClick={() => pan(1)} title="Pan forward">▶</button>
+              <button onClick={() => pan(-1)} title="Pan back" className="icon-only"><Icon name="left" /></button><button onClick={() => pan(1)} title="Pan forward" className="icon-only"><Icon name="right" /></button>
               <button onClick={() => { setView(null); setPaused(false); }} disabled={!view && !paused}>Live / reset</button>
-              <span className="spacer" /><button onClick={exportCsv} disabled={!series.length}>Export CSV</button>
+              <span className="spacer" /><button onClick={exportCsv} disabled={!series.length}><Icon name="download" />Export CSV</button>
             </div>
             {series.length === 0 ? <Empty title="No series yet">Select a topic and add one or more numeric fields. Drag on the plot to zoom; double-click to reset.</Empty> : <>
               <div className="plotbox">
@@ -189,7 +190,7 @@ export function SignalsPage() {
                     <td><span className="swatch" style={{ background: s.color, display: "inline-block" }} /></td>
                     <td><input value={s.label} style={{ width: "100%" }} onChange={e => setSeries(all => all.map(y => y.id === s.id ? { ...y, label: e.target.value } : y))} aria-label="Series label" /></td>
                     <td className="r mono">{fmtNum(x?.latest, 4)}</td><td className="r mono">{fmtNum(x?.min, 4)}</td><td className="r mono">{fmtNum(x?.max, 4)}</td><td className="r mono">{fmtNum(x?.avg, 4)}</td><td className="r mono">{x?.n ?? 0}</td>
-                    <td><button onClick={e => { e.stopPropagation(); remove(s.id); }} title="Remove series">✕</button></td></tr>); })}</tbody>
+                    <td><button onClick={e => { e.stopPropagation(); remove(s.id); }} title="Remove series" className="icon-only" style={{ height: 22, width: 22 }}><Icon name="x" size={13} /></button></td></tr>); })}</tbody>
               </table>
               <p className="muted">Min/Max/Avg cover the visible time range; Latest is the newest buffered value. {paused ? "Display is frozen; collection continues." : ""}</p></>}
           </div>

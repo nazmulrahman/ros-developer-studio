@@ -3,7 +3,7 @@ import uPlot from "uplot";
 import "uplot/dist/uPlot.min.css";
 
 export interface PlotSeries { label: string; color: string }
-const AXIS = { stroke: "#93A6B7", grid: { stroke: "rgba(48,62,76,.7)", width: 1 }, ticks: { stroke: "#303E4C", width: 1 } };
+const AXIS = { stroke: "#93A6B7", font: "11px Inter, system-ui, sans-serif", grid: { stroke: "rgba(48,62,76,.45)", width: 1 }, ticks: { stroke: "rgba(48,62,76,.7)", width: 1, size: 4 } };
 
 /** Thin uPlot wrapper. x values are epoch seconds. Parent changes `key` when the series set changes. */
 export function Plot({ series, data, xRange, height = 260, onZoom, onReset, yLabel }: {

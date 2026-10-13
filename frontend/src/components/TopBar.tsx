@@ -1,3 +1,4 @@
+import { Icon } from "./Icon";
 import type { LiveStatus, Mode } from "../types/api";
 import type { WsState } from "../services/live";
 
@@ -20,7 +21,7 @@ export function TopBar({ mode, onMode, wsState, status, token, onToken }: {
     : ["ok", `${r.distro ?? "unknown distro"} · domain ${r.domain_id} · discovery active`];
   return (
     <header className="topbar">
-      <span className="brand">ROS Developer Studio</span>
+      <span className="brand"><Icon name="graph" size={18} />ROS Developer Studio</span>
       <div className="seg" role="group" aria-label="Mode">
         <button aria-pressed={mode === "live"} onClick={() => onMode("live")}>Live</button>
         <button aria-pressed={mode === "offline"} onClick={() => onMode("offline")}>Offline bag</button>

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Icon } from "../components/Icon";
 import { Gate } from "../components/Gate";
 import { JsonTree } from "../components/JsonTree";
 import { Empty, Notice, StatusBadge, Tile } from "../components/ui";
@@ -93,9 +94,9 @@ export function InspectorPage() {
             <Tile label="Publishers / Subs" value={stats ? `${stats.publishers} / ${stats.subscribers}` : "—"} sub="excluding this tool" />
           </div>
           <div className="row2">
-            <button onClick={() => setPaused(p => !p)}>{paused ? "▶ Resume" : "⏸ Pause"}</button>
-            <button onClick={() => navigator.clipboard.writeText(JSON.stringify(msg?.payload ?? null, null, 2))} disabled={!msg}>Copy message</button>
-            <button onClick={() => setMsg(null)} disabled={!msg}>Clear</button>
+            <button onClick={() => setPaused(p => !p)}><Icon name={paused ? "play" : "pause"} />{paused ? "Resume" : "Pause"}</button>
+            <button onClick={() => navigator.clipboard.writeText(JSON.stringify(msg?.payload ?? null, null, 2))} disabled={!msg}><Icon name="copy" />Copy message</button>
+            <button onClick={() => setMsg(null)} disabled={!msg}><Icon name="trash" />Clear</button>
             <label className="muted">Update rate <select value={rate} onChange={e => setRate(Number(e.target.value))}>{RATES.map(r => <option key={r} value={r}>{r} Hz</option>)}</select></label>
             <span className="muted">{paused ? "Display frozen — frequency and counts keep updating." : ""}</span>
           </div>

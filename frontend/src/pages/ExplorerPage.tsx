@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Icon } from "../components/Icon";
 import { DataTable, type Col } from "../components/DataTable";
 import { Gate } from "../components/Gate";
 import { Empty, Notice } from "../components/ui";
@@ -75,7 +76,7 @@ export function ExplorerPage() {
   const toolbar = <>
     {graph.loading && <span className="muted">Refreshing…</span>}
     {graph.updated && !graph.loading && <span className="muted">updated {new Date(graph.updated).toLocaleTimeString([], { hour12: false })}</span>}
-    <button onClick={refreshGraph}>Refresh</button></>;
+    <button onClick={refreshGraph}><Icon name="refresh" />Refresh</button></>;
   const empty = "No entries discovered. The agent is connected; ROS discovery can take a moment, and this environment may simply have none.";
 
   return (
