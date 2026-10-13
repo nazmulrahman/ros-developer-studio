@@ -8,6 +8,8 @@ import { useApp, useDock } from "../services/app";
 import { useLive } from "../services/live";
 import type { Endpoint, GraphIface, GraphNode, GraphTopic, NodeDetail, TopicDetail } from "../types/api";
 
+import { Parameters } from "../components/Parameters";
+
 type Tab = "topics" | "nodes" | "services" | "actions";
 
 function EndpointList({ title, eps }: { title: string; eps: Endpoint[] }) {
@@ -47,7 +49,7 @@ function NodeDock({ name }: { name: string }) {
   useEffect(() => { setD(null); setErr(null); api<NodeDetail>(`/api/live/node?name=${encodeURIComponent(name)}`).then(setD).catch(e => setErr(String(e.message ?? e))); }, [name]);
   const L = ({ t, rows }: { t: string; rows: GraphIface[] }) => (<><h2>{t} ({rows.length})</h2>{rows.map(r => <div key={r.name} className="mono" style={{ marginBottom: 4 }}>{r.name}<div className="muted">{r.types.join(", ")}</div></div>)}</>);
   return (<><div className="mono" style={{ marginBottom: 8 }}>{name}</div>{err && <Notice kind="err">{err}</Notice>}{!d && !err && <div className="muted">Loading…</div>}
-    {d && <><L t="Publishes" rows={d.publishers} /><L t="Subscribes" rows={d.subscribers} /><L t="Services served" rows={d.service_servers} /><L t="Service clients" rows={d.service_clients} /></>}</>);
+    {d && <><L t="Publishes" rows={d.publishers} /><L t="Subscribes" rows={d.subscribers} /><L t="Services served" rows={d.service_servers} /><L t="Service clients" rows={d.service_clients} /><Parameters key={name} name={name} /></>}</>);
 }
 
 export function ExplorerPage() {

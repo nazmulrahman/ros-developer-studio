@@ -1,4 +1,6 @@
-# Test report (phase 2)
+# Test report
+
+## Phase 2 original report
 Command: `python -m pytest` — 36 tests, all passing in the build sandbox (Linux, Python 3.12).
 
 **What the tests exercise:** the real agent server and real backend over real WebSockets, with a controlled `FakeRos` behind the same `RosBackend` interface that `RclpyBackend` implements (`tests/fakes.py`). Host metrics use real `psutil`.
@@ -26,3 +28,14 @@ Command: `python -m pytest` — 36 tests, all passing in the build sandbox (Linu
 Not covered: browser/backend restart behaviour of the UI (reconnect logic is untested), no-ROS-nodes on a real graph, performance on Raspberry Pi/Jetson.
 
 **Smoke run (real processes, no ROS):** agent `--no-ros` + backend: status connected / `ros.available=false` with reason, `ros_unavailable` on graph, host metrics REST + WebSocket stream OK; backend RSS ≈ 48 MiB, agent ≈ 26 MiB idle (one measurement, 1-core VM).
+
+## Phase 3 verification — 2026-10-13
+
+- `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q`: **47 passed**; regression suite includes bounded camera conversion, LiDAR invalid values/decimation, nonblocking preview processing, exact timestamps, opt-in visual fanout, late TF viewers, parameter failure mapping, authenticated layout CRUD, preference validation, and corrupt-store protection. Existing Phase 2 tests remain included.
+- `cd frontend && npm test && npm run build`: domain checks for quaternion validation/conversion, buffer bounds, invalid numeric values and saved configuration validation; strict TypeScript and Vite build.
+- `.venv/bin/python -m scripts.verify_phase3_ros`: **real ROS 2 Humble**, Python 3.10, CycloneDDS, loopback, isolated domain 187. Synthetic Image/LaserScan/Imu/BatteryState/Odometry/Twist/TFMessage publishers feed the real agent and backend. Verified namespaced parameter reads, separate header/receive clocks and retained static transforms published before subscription. This caught a static-TF reliability issue and the corrected run passed.
+- Browser exercised against that synthetic ROS fixture: mapped feedback displayed 0.400 m/s; camera image decoded, scan rendered 360 rays, battery displayed 75%, IMU orientation/acceleration rendered, odometry trace rendered and TF frame relationship appeared. Parameter `fixture_label` was visible in Explorer. Saved a layout, removed its Motion widget, then restored the layout and saw the widget return. No browser errors/warnings during these checks. Narrow-window header overflow was corrected.
+
+These are synthetic integration checks, not hardware acceptance. The user separately confirmed Phase 2 discovery and messages in their demo-node run. Jazzy, Pi/Jetson, sustained resource measurements, full TF completeness, camera depth encodings and Phase 4 offline bags are **not verified**. Raw camera and JPEG/PNG error/resize handling have unit coverage; the live smoke fixture uses RGB8. The TF UI intentionally makes no complete-tree or transform-validity claim.
+
+The smoke script sets its domain/localhost/log/preferences environment before importing ROS and cleans up its publishers, agent and backend on exit. `--serve` keeps it running for browser checks until interrupted. Do not treat this synthetic fixture as robot telemetry.

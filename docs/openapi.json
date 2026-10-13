@@ -2,7 +2,7 @@
  "openapi": "3.1.0",
  "info": {
   "title": "ROS Developer Studio",
-  "description": "Live analysis endpoints are implemented (phase 2). Endpoints returning 501 are planned for later phases.",
+  "description": "Live analysis, sensor previews, parameters and layouts are implemented (phases 2\u20133). Endpoints returning 501 are planned for later phases.",
   "version": "0.0.1"
  },
  "paths": {
@@ -128,12 +128,32 @@
     ],
     "summary": "Put Settings",
     "operationId": "put_settings_api_settings_put",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/Preferences"
+       }
+      }
+     },
+     "required": true
+    },
     "responses": {
      "200": {
       "description": "Successful Response",
       "content": {
        "application/json": {
         "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
        }
       }
      }
@@ -408,13 +428,59 @@
     ]
    }
   },
-  "/api/live/nodes/{node}/parameters": {
+  "/api/live/parameters": {
    "get": {
     "tags": [
      "live"
     ],
     "summary": "Node Parameters",
-    "operationId": "node_parameters_api_live_nodes__node__parameters_get",
+    "operationId": "node_parameters_api_live_parameters_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "name",
+      "in": "query",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "pattern": "^/[A-Za-z0-9_/]+$",
+       "title": "Name"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/live/nodes/{node}/parameters": {
+   "get": {
+    "tags": [
+     "live"
+    ],
+    "summary": "Node Parameters Path",
+    "operationId": "node_parameters_path_api_live_nodes__node__parameters_get",
     "security": [
      {
       "HTTPBearer": []
@@ -1227,12 +1293,32 @@
     ],
     "summary": "Create Layout",
     "operationId": "create_layout_api_layouts_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/Layout"
+       }
+      }
+     },
+     "required": true
+    },
     "responses": {
      "200": {
       "description": "Successful Response",
       "content": {
        "application/json": {
         "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
        }
       }
      }
@@ -1268,6 +1354,16 @@
       }
      }
     ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/Layout"
+       }
+      }
+     }
+    },
     "responses": {
      "200": {
       "description": "Successful Response",
@@ -1721,6 +1817,28 @@
     "type": "object",
     "title": "HTTPValidationError"
    },
+   "Layout": {
+    "properties": {
+     "name": {
+      "type": "string",
+      "maxLength": 80,
+      "minLength": 1,
+      "title": "Name"
+     },
+     "config": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Config"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "name",
+     "config"
+    ],
+    "title": "Layout"
+   },
    "Mode": {
     "type": "string",
     "enum": [
@@ -1740,6 +1858,34 @@
      "mode"
     ],
     "title": "ModeRequest"
+   },
+   "Preferences": {
+    "properties": {
+     "preview_hz": {
+      "type": "number",
+      "maximum": 5.0,
+      "minimum": 0.5,
+      "title": "Preview Hz",
+      "default": 2
+     },
+     "motion_hz": {
+      "type": "number",
+      "maximum": 50.0,
+      "minimum": 1.0,
+      "title": "Motion Hz",
+      "default": 10
+     },
+     "stale_after_s": {
+      "type": "number",
+      "maximum": 60.0,
+      "minimum": 1.0,
+      "title": "Stale After S",
+      "default": 3
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "title": "Preferences"
    },
    "PublishRequest": {
     "properties": {

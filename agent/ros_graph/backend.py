@@ -1,6 +1,6 @@
 """ROS access behind one interface. RclpyBackend is the only code that imports rclpy.
 
-NOTE: RclpyBackend has NOT been run against a real ROS 2 graph in the build environment (no ROS available).
+Verified with an isolated ROS 2 Humble synthetic graph; Jazzy and robot hardware acceptance remain pending.
 """
 from __future__ import annotations
 import os, threading, time
@@ -44,6 +44,9 @@ class RosBackend(ABC):
     def subscribe(self, topic: str, cb: MsgCallback): ...
     @abstractmethod
     def fields_for(self, type_name: str) -> list[dict]: ...
+    def parameters(self, full_name: str) -> dict:
+        raise RosUnavailable("Parameter reading is unavailable in this backend")
+
     def close(self) -> None: ...
 
 
@@ -70,13 +73,18 @@ def _enum(x) -> str | None:
 class RclpyBackend(RosBackend):
     def __init__(self):
         import rclpy
-        from rclpy.executors import SingleThreadedExecutor
+        from rclpy.executors import SingleThreadedExecutor, ExternalShutdownException
         self._rclpy = rclpy
         rclpy.init()
         self.node = rclpy.create_node(self.NODE_NAME)
         self._executor = SingleThreadedExecutor()
         self._executor.add_node(self.node)
-        self._thread = threading.Thread(target=self._executor.spin, daemon=True, name="rclpy-spin")
+        def spin():
+            try:
+                self._executor.spin()
+            except ExternalShutdownException:
+                pass  # rclpy's SIGINT handler already shut down its context
+        self._thread = threading.Thread(target=spin, daemon=True, name="rclpy-spin")
         self._thread.start()
 
     def info(self):
@@ -147,6 +155,11 @@ class RclpyBackend(RosBackend):
         except Exception:  # node vanished between listing and inspection
             return None
 
+    def parameters(self, full_name):
+        from rcl_interfaces.srv import ListParameters, GetParameters
+        from .parameters import read_parameters
+        return read_parameters(self.node, full_name, ListParameters, GetParameters)
+
     def _msg_class(self, type_name: str):
         from rosidl_runtime_py.utilities import get_message
         try:
@@ -172,6 +185,14 @@ class RclpyBackend(RosBackend):
         def raw(data: bytes):
             cb(time.monotonic(), len(data), lambda: deserialize_message(data, cls))
 
+        # Retain published static transforms for a late-opening TF viewer when all
+        # discovered TF publishers offer transient-local durability.
+        if types[0] == "tf2_msgs/msg/TFMessage":
+            pubs = self.node.get_publishers_info_by_topic(topic)
+            if pubs and all(p.qos_profile.durability == QoSDurabilityPolicy.TRANSIENT_LOCAL for p in pubs):
+                qos.durability = QoSDurabilityPolicy.TRANSIENT_LOCAL
+                if all(p.qos_profile.reliability == QoSReliabilityPolicy.RELIABLE for p in pubs):
+                    qos.reliability = QoSReliabilityPolicy.RELIABLE
         sub = self.node.create_subscription(cls, topic, raw, qos, raw=True)  # raw: stats cost no deserialization
         node = self.node
 

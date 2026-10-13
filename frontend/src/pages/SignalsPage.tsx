@@ -22,7 +22,14 @@ const STORE = "rds.signals.v1";
 const lower = (a: number[], x: number) => { let lo = 0, hi = a.length; while (lo < hi) { const m = (lo + hi) >> 1; if (a[m] < x) lo = m + 1; else hi = m; } return lo; };
 const upper = (a: number[], x: number) => { let lo = 0, hi = a.length; while (lo < hi) { const m = (lo + hi) >> 1; if (a[m] <= x) lo = m + 1; else hi = m; } return lo; };
 
-function load() { try { return JSON.parse(localStorage.getItem(STORE) ?? "null"); } catch { return null; } }
+function load() {
+  try {
+    const v = JSON.parse(localStorage.getItem(STORE) ?? "null");
+    if (!v || !Array.isArray(v.series) || v.series.length > 64 || !WINDOWS.includes(v.windowS) || !RATES.includes(v.rate)) return null;
+    if (!v.series.every((s: any) => s && [s.id, s.topic, s.path, s.type, s.label, s.color].every(x => typeof x === "string"))) return null;
+    return v;
+  } catch { return null; }
+}
 
 export function SignalsPage() {
   const { watch, unwatch, graph, status } = useLive();

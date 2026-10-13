@@ -35,7 +35,7 @@ async def ws_live(ws: WebSocket):
             op = msg.get("op")
             if op == "watch":
                 await hub.watch(client, str(msg["topic"]), float(msg.get("hz") or 10), bool(msg.get("payload")),
-                                [str(f) for f in msg.get("fields") or []])
+                                [str(f) for f in msg.get("fields") or []], bool(msg.get("visual")))
             elif op == "unwatch":
                 await hub.unwatch(client, str(msg["topic"]))
             elif op == "host":

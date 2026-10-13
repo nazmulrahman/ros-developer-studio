@@ -22,6 +22,7 @@ class Settings:
     topic_buffer_bytes: int = 32 * 1024 * 1024
     stats_window_s: float = 5.0
     test_tools_allowed: bool = False
+    workspace_roots: list[str] = field(default_factory=lambda: [str(Path.cwd())])
 
 
 def load_settings(path: str | None = None) -> Settings:
@@ -30,7 +31,7 @@ def load_settings(path: str | None = None) -> Settings:
     if p.is_file():
         with p.open("rb") as f:
             raw = tomllib.load(f)
-        srv, ag, bg, lim, tt = (raw.get(k, {}) for k in ("server", "agent", "bags", "limits", "test_tools"))
+        srv, ag, bg, lim, tt, ws = (raw.get(k, {}) for k in ("server", "agent", "bags", "limits", "test_tools", "workspaces"))
         s.host, s.port = srv.get("host", s.host), srv.get("port", s.port)
         s.agent_url = ag.get("url", s.agent_url)
         s.agent_token = ag.get("token", s.agent_token)
@@ -40,4 +41,8 @@ def load_settings(path: str | None = None) -> Settings:
         s.topic_buffer_bytes = lim.get("topic_buffer_bytes", s.topic_buffer_bytes)
         s.stats_window_s = lim.get("stats_window_s", s.stats_window_s)
         s.test_tools_allowed = bool(tt.get("enabled", False))
+        s.workspace_roots = ws.get("roots", s.workspace_roots)
+    env_roots = os.environ.get("STUDIO_WORKSPACE_ROOTS")
+    if env_roots:
+        s.workspace_roots = [x for x in env_roots.split(os.pathsep) if x]
     return s

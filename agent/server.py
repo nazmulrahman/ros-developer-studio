@@ -162,14 +162,22 @@ class AgentServer:
             raise OpError("node_not_found", f"Node {a.get('name')} is not in the ROS graph")
         return info
 
+    async def op_node_parameters(self, s, a):
+        try:
+            return await asyncio.to_thread(self.ros.parameters, a.get("name", ""))
+        except TimeoutError as e:
+            raise OpError("parameter_timeout", str(e))
+
     async def op_sub_set(self, s, a):
         topic = a.get("topic", "")
         hz = float(a.get("hz") or 10.0)
-        w = Watch(hz=max(0.1, min(hz, 100.0)), payload=bool(a.get("payload")), fields=tuple(a.get("fields") or ()))
+        w = Watch(hz=max(0.1, min(hz, 100.0)), payload=bool(a.get("payload")), fields=tuple(a.get("fields") or ()), visual=bool(a.get("visual")))
         async with self._locks.setdefault(topic, asyncio.Lock()):   # one ROS subscription per topic, even under concurrent viewers
             mon = self.monitors.get(topic)
             if mon is None:
                 mon = Monitor(topic, self.window_s, self.loop)
+                info = await asyncio.to_thread(self.ros.topic_info, topic)
+                mon.types = list(info["types"]) if info else []
                 mon.set_watch(s, w)  # register before subscribing so no early message is lost
                 mon.handle = await asyncio.to_thread(self.ros.subscribe, topic, mon.on_message)
                 mon.types = list(getattr(mon.handle, "types_", []))

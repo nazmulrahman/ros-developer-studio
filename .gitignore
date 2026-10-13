@@ -3,3 +3,9 @@ frontend/dist/
 __pycache__/
 .pytest_cache/
 config/studio.toml
+config/preferences.json
+config/preferences.json.tmp
+config/workspace_roots.json
+config/workspace_roots.json.tmp
+config/package_layouts/
+.venv/

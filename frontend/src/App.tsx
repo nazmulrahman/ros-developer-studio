@@ -1,4 +1,4 @@
-import { useCallback, useState, type ReactNode } from "react";
+import { lazy, Suspense, useCallback, useState, type ReactNode } from "react";
 import { PAGES } from "./pages/pages";
 import { Sidebar } from "./components/Sidebar";
 import { TopBar } from "./components/TopBar";
@@ -8,11 +8,16 @@ import { ExplorerPage } from "./pages/ExplorerPage";
 import { InspectorPage } from "./pages/InspectorPage";
 import { SignalsPage } from "./pages/SignalsPage";
 import { HostPage } from "./pages/HostPage";
+import { MotionPage } from "./pages/MotionPage";
+import { VisualizationsPage } from "./pages/VisualizationsPage";
+import { SettingsPage } from "./pages/SettingsPage";
 import { OverviewPage } from "./pages/OverviewPage";
 import { AppContext } from "./services/app";
 import { LiveProvider, useLive } from "./services/live";
 import { api, getToken, setToken } from "./services/api";
 import type { Mode } from "./types/api";
+
+const PackageExplorerPage = lazy(() => import("./pages/PackageExplorerPage").then(x => ({ default: x.PackageExplorerPage })));
 
 function Shell({ token, onToken }: { token: string; onToken: (t: string) => void }) {
   const { status, wsState } = useLive();
@@ -23,8 +28,8 @@ function Shell({ token, onToken }: { token: string; onToken: (t: string) => void
   const setDock = useCallback((n: ReactNode) => setDockNode(n), []);
   const mode: Mode = status?.mode ?? "live";
   const def = PAGES.find(p => p.id === page)!;
-  const view = !def.ready ? <PageStub page={def} /> : page === "overview" ? <OverviewPage /> : page === "explorer" ? <ExplorerPage />
-    : page === "inspector" ? <InspectorPage /> : page === "signals" ? <SignalsPage /> : <HostPage />;
+  const view = !def.ready ? <PageStub page={def} /> : page === "overview" ? <OverviewPage /> : page === "explorer" ? <ExplorerPage /> : page === "packages" ? <Suspense fallback={<div className="page"><p>Loading Package Explorer…</p></div>}><PackageExplorerPage /></Suspense>
+    : page === "motion" ? <MotionPage /> : page === "viz" ? <VisualizationsPage /> : page === "settings" ? <SettingsPage /> : page === "inspector" ? <InspectorPage /> : page === "signals" ? <SignalsPage /> : <HostPage />;
   return (
     <AppContext.Provider value={{ page, setPage, selectedTopic, setSelectedTopic, setDock }}>
       <div className="shell">

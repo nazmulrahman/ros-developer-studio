@@ -15,6 +15,7 @@ class ClientWatch:
     hz: float = 10.0
     payload: bool = False
     fields: tuple[str, ...] = ()
+    visual: bool = False
     last_emit: float = 0.0
 
 
@@ -45,6 +46,7 @@ class LiveHub:
         self.desired: dict[str, dict] = {}
         self.host_desired: float | None = None
         self.dropped_total = 0
+        self.tf_previews: dict[str, dict] = {}
 
     # ---------- lifecycle
     async def start(self):
@@ -53,6 +55,7 @@ class LiveHub:
             await self.agent.start()
 
     async def stop(self):
+        self.tf_previews.clear()
         if self.agent:
             await self.agent.stop()
             self.agent = None
@@ -85,6 +88,8 @@ class LiveHub:
 
     # ---------- agent callbacks
     async def _on_state(self, state: str):
+        if state != "connected":
+            self.tf_previews.clear()
         if state == "connected":
             await self._resync()
         self._broadcast(self.status_event())
@@ -100,13 +105,19 @@ class LiveHub:
     async def _on_event(self, ev: dict):
         ch = ev["ch"]
         if ch == "sample":
+            if ev["topic"] in self.desired and ev.get("type") == "tf2_msgs/msg/TFMessage" and "visual" in ev:
+                self.tf_previews[ev["topic"]] = ev
             now = time.monotonic()
             for c in list(self.clients):
                 w = c.watches.get(ev["topic"])
-                if not w or not (w.payload or w.fields) or now - w.last_emit < 1.0 / max(w.hz, 0.1):
+                if not w or not (w.payload or w.fields or (w.visual and "visual" in ev)) or now - w.last_emit < 1.0 / max(w.hz, 0.1):
                     continue
                 w.last_emit = now
                 out = {"ch": "sample", "topic": ev["topic"], "t_ns": ev["t_ns"], "size": ev["size"]}
+                for k in ("source_mode", "source_id", "type", "stamps"):
+                    if k in ev: out[k] = ev[k]
+                if w.visual and "visual" in ev:
+                    out["visual"] = ev["visual"]
                 if w.payload and "payload" in ev:
                     out["payload"] = ev["payload"]
                 if w.fields and "values" in ev:
@@ -145,9 +156,12 @@ class LiveHub:
             await self._recompute(topic)
         await self._recompute_host()
 
-    async def watch(self, c: Client, topic: str, hz: float, payload: bool, fields: list[str]):
-        c.watches[topic] = ClientWatch(hz=max(0.1, min(hz or 10.0, 100.0)), payload=payload, fields=tuple(fields))
+    async def watch(self, c: Client, topic: str, hz: float, payload: bool, fields: list[str], visual: bool = False):
+        c.watches[topic] = ClientWatch(hz=max(0.1, min(hz or 10.0, 100.0)), payload=payload, fields=tuple(fields), visual=visual)
         err = await self._recompute(topic)
+        if visual and topic in self.tf_previews:
+            cached = self.tf_previews[topic]
+            c.push({k: v for k, v in cached.items() if k not in ("payload", "values")})
         if err:
             c.push({"ch": "watch_error", "topic": topic, **err})
             c.watches.pop(topic, None)
@@ -163,12 +177,13 @@ class LiveHub:
     async def _recompute(self, topic: str) -> dict | None:
         specs = [c.watches[topic] for c in self.clients if topic in c.watches]
         if not specs:
+            self.tf_previews.pop(topic, None)
             self.desired.pop(topic, None)
             await self._agent_call("sub.stop", {"topic": topic})
             return None
-        data = [s for s in specs if s.payload or s.fields]
+        data = [s for s in specs if s.payload or s.fields or s.visual]
         args = {"topic": topic, "hz": max((s.hz for s in data), default=1.0), "payload": any(s.payload for s in specs),
-                "fields": sorted({f for s in specs for f in s.fields})}
+                "fields": sorted({f for s in specs for f in s.fields}), "visual": any(s.visual for s in specs)}
         self.desired[topic] = args
         return await self._agent_call("sub.set", args, topic)
 

@@ -74,3 +74,17 @@ Legend — **Preserved**: same behaviour kept · **Improved**: kept and extended
 | Host metrics (psutil, GPU nvidia-smi, Jetson sysfs) | yes | yes (psutil real; GPU absent path) | n/a | Jetson sysfs path is best-effort and **unverified on hardware**; no `jtop`/tegrastats |
 | Live CSV export, zoom/pan, pause | yes | no | n/a | client-side; untested in browser |
 | Series buffers | yes | no | n/a | 10 min / 12 000 points per series; reset when leaving Signals |
+
+## Phase 3 status update — 2026-10-13 (supersedes earlier unverified labels)
+
+The user confirmed Phase 2 topic discovery/live messages in their demo-node run. A local real-Humble synthetic fixture and browser checks now cover Motion mappings, Image, LaserScan, Imu, BatteryState, Odometry, Twist, read-only parameters and TF relationships. Signals plotting predates this increment. Layout/preferences persistence has API and browser verification. Camera conversion/limits and sampled sensor handling have unit tests.
+
+| Reference rows | Current result | Limits |
+|---|---|---|
+| 9 | Configurable Motion widgets and measured/reference plots | Up to 16 widgets; no geometry inference, unit conversion or cross-topic synchronization; generic numeric motor status only |
+| 10–14 | IMU, scan, battery, camera and odometry viewers | Standard supported encodings; bounded sampled previews; no depth image rendering |
+| 16 | Partial TF relationship inspection | Per-topic observed edges, retained static delivery when offered; full merged TF hierarchy/lookup and diagnostic rules remain unfinished |
+| 21 | Read-only parameter inspection | Up to 500 names; bounded values, 3-second service timeout |
+| 35 | Settings + backend saved workspace layouts | Sampling/freshness settings and widget/series definitions; no credentials, live data, window geometry or dock layout |
+
+Phases 4–6 remain deferred. Source-independent renderers exist; their use with real recorded bags is not yet implemented or verified.

@@ -3,7 +3,7 @@ import { api } from "./api";
 import type { Graph, LiveStatus } from "../types/api";
 
 export type WsState = "idle" | "connecting" | "open" | "closed" | "unauthorized";
-export interface WatchSpec { hz: number; payload?: boolean; fields?: string[] }
+export interface WatchSpec { hz: number; payload?: boolean; fields?: string[]; visual?: boolean }
 export interface AppEvent { t: number; level: "info" | "warn" | "error"; text: string }
 type Handler = (ev: any) => void;
 

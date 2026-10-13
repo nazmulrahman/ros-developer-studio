@@ -126,3 +126,11 @@ Each phase ends with: what was built, what was tested, what remains, known limit
 4. Is a read-only file browser needed beyond bag selection?
 5. Need the reference `replay.html` or `/wheel_rpm` message type? Only if we want parity details; not required.
 6. Python floor: 3.10 (Humble) assumed.
+
+## Phase 3 implementation update (2026-10-13)
+
+The preceding sections include target architecture. The shipped data transport remains JSON WebSockets. Bounded camera thumbnails use base64 JPEG, not binary frames. Numeric series remain browser-side. Live events now carry source ID/mode, message type and distinct timestamps (nanoseconds encoded as strings on the wire), alongside backwards-compatible `t_ns`/`values`/`payload` fields.
+
+Agent preview workers keep decoding away from the ROS executor; one pending task per monitored topic, two concurrent workers. Sensor renderers consume the normalized preview envelope independently of live transport. TF history is partial and sampled; `/api/live/tf` remains a future snapshot/lookup API. Read-only parameter listing uses only ListParameters/GetParameters with bounded waiting and client cleanup.
+
+User preferences/layouts use atomic JSON replacement with size/count limits. API settings updates only change display preferences; connection configuration and robot-write permissions cannot be changed there. Test Tools remain unavailable. See PROGRESS.md for exact acceptance limits.

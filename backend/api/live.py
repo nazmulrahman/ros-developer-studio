@@ -5,7 +5,7 @@ from ..data_sources.live import AgentError, AgentUnavailable
 from .common import not_implemented
 
 router = APIRouter(prefix="/api", tags=["live"], dependencies=[Depends(require_auth)])
-_STATUS = {"topic_not_found": 404, "node_not_found": 404, "unsupported_type": 422, "ros_unavailable": 503}
+_STATUS = {"topic_not_found": 404, "node_not_found": 404, "unsupported_type": 422, "ros_unavailable": 503, "parameter_timeout": 504}
 
 
 async def agent_call(request: Request, op: str, args: dict | None = None):
@@ -62,8 +62,13 @@ async def live_actions(request: Request):
     return (await agent_call(request, "graph.snapshot"))["actions"]
 
 
-@router.get("/live/nodes/{node}/parameters")
-def node_parameters(node: str): not_implemented(3, "read-only parameter listing")
+@router.get("/live/parameters")
+async def node_parameters(request: Request, name: str = Query(..., pattern=r"^/[A-Za-z0-9_/]+$")):
+    return await agent_call(request, "node.parameters", {"name": name})
+
+@router.get("/live/nodes/{node:path}/parameters")
+async def node_parameters_path(request: Request, node: str):
+    return await agent_call(request, "node.parameters", {"name": "/" + node.lstrip("/")})
 
 @router.get("/live/tf")
 def live_tf(): not_implemented(3, "TF tree")
