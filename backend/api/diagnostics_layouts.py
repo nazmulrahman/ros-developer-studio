@@ -8,7 +8,22 @@ router = APIRouter(prefix="/api", tags=["diagnostics", "layouts"], dependencies=
 
 
 @router.get("/diagnostics/findings", response_model=list[Finding])
-def findings(source: str = "live"): not_implemented(5, "rule-based findings with evidence")
+def findings(request: Request, source: str = "live"):
+    hub = request.app.state.hub; rows = []
+    def add(severity, component, evidence, causes, checks):
+        rows.append(dict(severity=severity, component=component, evidence=evidence, possible_causes=causes, suggested_checks=checks))
+    for topic, event in hub.topic_evidence.items():
+        status = event.get("status")
+        if status in ("stalled", "publisher_no_data", "no_publisher", "qos_incompatible", "topic_missing"):
+            add("error" if status == "qos_incompatible" else "warning", topic, str(event.get("evidence") or status),
+                ["Publisher inactive or stalled", "Communication or QoS mismatch", "Host resource pressure"],
+                ["Inspect publisher endpoints and offered QoS", "Compare ROS logs and host metrics at the same time", "Check whether the topic is expected to publish continuously"])
+    for row in hub.tf_tree.snapshot()["diagnostics"]:
+        add("error" if row["severity"] == "error" else "warning", "TF", row["message"],
+            ["Transform broadcaster configuration or timing problem"], ["Inspect the affected frames and source topic in the unified TF viewer"])
+    if not hub.agent or hub.agent.state != "connected":
+        add("warning", "Agent", "Live agent is unavailable; live checks have incomplete evidence.", ["Agent stopped or connection unavailable"], ["Check the agent process and connection settings"])
+    return rows
 
 @router.get("/layouts")
 def layouts(request: Request): return request.app.state.preferences.read()["layouts"]

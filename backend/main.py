@@ -10,6 +10,7 @@ from .api import app_diag, bags, core_routes, diagnostics_layouts, host, live, p
 from .core.hub import LiveHub
 from .core.preferences import PreferenceStore
 from .core.workspace_roots import WorkspaceRootStore
+from .bags.studio import BagLibrary, Recorder
 from .core import auth
 from .core.state import state
 
@@ -25,7 +26,7 @@ def create_app() -> FastAPI:
         await hub.stop()
 
     app = FastAPI(title="ROS Developer Studio", version=core_routes.VERSION, lifespan=lifespan,
-                  description="Live analysis, sensor previews, parameters and layouts are implemented (phases 2–3). Endpoints returning 501 are planned for later phases.")
+                  description="Live analysis, sensor previews, parameters, layouts and offline Bag Studio are implemented (phases 2–4).")
     app.state.hub = hub
     app.state.preferences = PreferenceStore(os.environ.get("STUDIO_PREFERENCES", "config/preferences.json"))
     app.state.settings = state.settings
@@ -33,6 +34,8 @@ def create_app() -> FastAPI:
         os.environ.get("STUDIO_WORKSPACE_ROOTS_FILE", "config/workspace_roots.json"),
         state.settings.workspace_roots,
     )
+    app.state.bags = BagLibrary(state.settings.bag_dirs)
+    app.state.recorder = Recorder(state.settings.record_dir)
     for r in (core_routes.router, live.router, host.router, app_diag.router, bags.router,
               diagnostics_layouts.router, package_explorer.router, testtools.router, ws.router):
         app.include_router(r)

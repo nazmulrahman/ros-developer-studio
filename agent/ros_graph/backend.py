@@ -96,21 +96,40 @@ class RclpyBackend(RosBackend):
     def _is_self(self, name: str, ns: str) -> bool:
         return name == self.NODE_NAME and ns in ("", "/")
 
+    def _node_names(self):
+        """(nodes, warning). rcl raises if any DDS participant has an empty node name (a half-started node,
+        a non-ROS participant, or an RMW mismatch). Fall back to node names seen on topic endpoints."""
+        try:
+            return list(self.node.get_node_names_and_namespaces()), None
+        except Exception as e:
+            found = set()
+            for topic, _ in self.node.get_topic_names_and_types():
+                for fn in (self.node.get_publishers_info_by_topic, self.node.get_subscriptions_info_by_topic):
+                    try:
+                        for i in fn(topic):
+                            if i.node_name:
+                                found.add((i.node_name, i.node_namespace or "/"))
+                    except Exception:
+                        pass
+            return sorted(found), (f"Node list may be incomplete (nodes without topics are missing): "
+                                   f"{type(e).__name__}: {e}")
+
     def signature(self):
         topics = tuple(sorted((n, tuple(t)) for n, t in self.node.get_topic_names_and_types()))
-        nodes = tuple(sorted(self.node.get_node_names_and_namespaces()))
+        nodes = tuple(sorted(self._node_names()[0]))
         return topics, nodes
 
     def graph(self, self_topics):
+        node_list, node_warning = self._node_names()
         nodes = [{"name": n, "namespace": ns, "full": (ns.rstrip("/") + "/" + n), "self": self._is_self(n, ns)}
-                 for n, ns in sorted(self.node.get_node_names_and_namespaces())]
+                 for n, ns in sorted(node_list)]
         topics = []
         for name, types in sorted(self.node.get_topic_names_and_types()):
             subs = self.node.count_subscribers(name) - (1 if name in self_topics else 0)
             topics.append({"name": name, "types": list(types), "publishers": self.node.count_publishers(name),
                            "subscribers": max(0, subs)})
         services = [{"name": n, "types": list(t)} for n, t in sorted(self.node.get_service_names_and_types())]
-        warnings: list[str] = []
+        warnings: list[str] = [node_warning] if node_warning else []
         try:
             from rclpy.action import get_action_names_and_types
             actions = [{"name": n, "types": list(t)} for n, t in sorted(get_action_names_and_types(self.node))]

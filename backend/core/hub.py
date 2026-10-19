@@ -48,6 +48,7 @@ class LiveHub:
         self.host_desired: float | None = None
         self.dropped_total = 0
         self.tf_previews: dict[str, dict] = {}
+        self.topic_evidence: dict[str, dict] = {}
         self.tf_tree = TfTree()
 
     # ---------- lifecycle
@@ -59,6 +60,7 @@ class LiveHub:
     async def stop(self):
         self.tf_previews.clear()
         self.tf_tree.clear()
+        self.topic_evidence.clear()
         if self.agent:
             await self.agent.stop()
             self.agent = None
@@ -130,6 +132,8 @@ class LiveHub:
                     out["values"] = {k: ev["values"].get(k) for k in w.fields}
                 c.push(out)
         elif ch == "stats":
+            self.topic_evidence[ev["topic"]] = ev
+            if len(self.topic_evidence) > 2000: self.topic_evidence.pop(next(iter(self.topic_evidence)))
             for c in list(self.clients):
                 if ev["topic"] in c.watches:
                     c.push(ev)

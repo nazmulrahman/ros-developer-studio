@@ -33,18 +33,18 @@ Legend — **Preserved**: same behaviour kept · **Improved**: kept and extended
 | 23 | Manual publish | advertise + publish once | Preserved | Test Tools, schema validation, disabled by default | 6* | ☐ |
 | 24 | Velocity test w/ timeout | (User workspace teleop) | Replaced | Short timed command + auto zero; warning that it is not a safety system | 6* | ☐ |
 | 25 | Export JSON | series/topics/logs | Improved | CSV + JSON of selected data; message export | 3 | ☐ |
-| 26 | Rosbag record | `ros2 bag record` subprocess | Replaced | Backend-managed recorder, topic picker, status, size, errors | 4 | ☐ |
-| 27 | Rosbag play (into replay domain 187) | `ros2 bag play` + 2nd bridge | Replaced | Direct `rosbag2_py` read; no ROS graph needed. Live-graph replay is a future opt-in | 4 | ☐ |
-| 28 | Rosbag list / metadata | regex over metadata.yaml | Replaced | `rosbag2_py` metadata; SQLite3 + MCAP where installed | 4 | ☐ |
-| 29 | Bag seek / speed / step / timeline | — | New | Offline player service (WS) | 4 | ☐ |
-| 30 | Bag analysis (gaps, discontinuities, per-topic Hz) | — | New | Background indexing job | 4–5 | ☐ |
-| 31 | Files browser (read-only) | Tornado `/terminal-api/list,preview` | Deferred | Only needed for bag selection in V1 → restricted bag-directory browser. General browser optional later | 4 | ☐ |
+| 26 | Rosbag record | `ros2 bag record` subprocess | Replaced | Backend-managed recorder, topic picker, status, size, errors | 4 | ◐ API tested; live recording pending |
+| 27 | Rosbag play (into replay domain 187) | `ros2 bag play` + 2nd bridge | Replaced | Direct file reads; no ROS graph needed. Live-graph replay is a future opt-in | 4 | ✔ Humble SQLite3 fixture |
+| 28 | Rosbag list / metadata | regex over metadata.yaml | Replaced | SQLite read-only queries + metadata; MCAP through `rosbag2_py` where installed | 4 | ◐ SQLite3 verified; MCAP pending |
+| 29 | Bag seek / speed / step / timeline | — | New | Browser timeline over bounded message windows | 4 | ◐ build + API tests |
+| 30 | Bag analysis (gaps, discontinuities, per-topic Hz) | — | New | Bounded on-demand timestamp analysis | 4–5 | ✔ Humble SQLite3 fixture |
+| 31 | Files browser (read-only) | Tornado `/terminal-api/list,preview` | Replaced | Configured restricted bag library; general file browser remains out of scope | 4 | ◐ root escape tests |
 | 32 | Embedded shell (PTY/SSH) | xterm + Tornado | Deferred | Off by default; separate explicit enable + auth if ever added | post-V1 | ☐ |
 | 33 | Token + Host/Origin + loopback bind | Tornado | Preserved | FastAPI auth dependency, WS origin check, loopback default | 2 | ◐ fake-ROS tests |
-| 34 | Symlink-escape protection | resolve + commonpath | Preserved | Same rule for bag directories | 4 | ☐ |
+| 34 | Symlink-escape protection | resolve + commonpath | Preserved | Same rule for bag directories | 4 | ◐ automated tests |
 | 35 | Saved layouts / preferences | — (none) | New | Backend JSON store | 3 | ☐ |
 | 36 | QoS incompatibility detection | — (impossible via rosapi) | New | `rclpy` endpoint info | 5 | ☐ |
-| 37 | Offline bag mode | — | New | Mode B, first-class | 4 | ☐ |
+| 37 | Offline bag mode | — | New | Mode B, first-class Bag Studio | 4 | ✔ Humble SQLite3 fixture |
 | 38 | User workspace (teleop, relay, weather) | — | Excluded | Not a developer feature | — | n/a |
 | 39 | 2D navigation / goals | `/nav-api` | Excluded | Out of scope | — | n/a |
 | 40 | Map editor | `map_editor.html` | Excluded | Out of scope | — | n/a |
@@ -87,4 +87,4 @@ The user confirmed Phase 2 topic discovery/live messages in their demo-node run.
 | 21 | Read-only parameter inspection | Up to 500 names; bounded values, 3-second service timeout |
 | 35 | Settings + backend saved workspace layouts | Sampling/freshness settings and widget/series definitions; no credentials, live data, window geometry or dock layout |
 
-Phases 4–6 remain deferred. Source-independent renderers exist; their use with real recorded bags is not yet implemented or verified.
+Phase 4 is implemented. Its direct SQLite3 read path is verified with a real Humble-generated bag; MCAP, live recording, Jazzy and hardware acceptance remain. Phases 5–6 remain deferred.

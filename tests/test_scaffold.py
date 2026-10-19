@@ -29,11 +29,11 @@ def test_auth_required(client):
 def test_session_defaults_are_read_only(client):
     s = client.get("/api/session", headers=H).json()
     assert s["test_tools_enabled"] is False
-    assert s["capabilities"]["test_tools"] is False and s["capabilities"]["recording"] is False
+    assert s["capabilities"]["test_tools"] is False and s["capabilities"]["recording"] is True and s["capabilities"]["offline_bags"] is True
 
 
 @pytest.mark.parametrize("method,path", [
-    ("get", "/api/host/processes"), ("get", "/api/bags"), ("get", "/api/record/status"), ("get", "/api/diagnostics/findings"),
+    ("get", "/api/host/processes"),
 ])
 def test_unimplemented_returns_501_not_fake_data(client, method, path):
     r = getattr(client, method)(path, headers=H)

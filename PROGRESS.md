@@ -9,7 +9,8 @@
 - [x] Phase 3 browser checks — Motion values, six sensor viewers, Explorer parameters, layout save/restore, browser console, responsive header.
 - [x] Phase 3 TF completion — `/tf` and `/tf_static` merge into one bounded hierarchy with roots, disconnected groups, stale transforms, multiple-parent, cycle, self-parent and quaternion diagnostics; search, graph navigation and transform inspection are included.
 - [ ] Hardware/release acceptance — test the completed Phase 3 feature set on the user's robot, Jazzy, Raspberry Pi and Jetson before making compatibility or performance claims.
-- [ ] Phase 4 — Bag Studio (direct offline reads, recording, timeline, export).
+- [x] Phase 4 — Bag Studio: restricted bag library, SQLite3 and optional MCAP reads, decoded messages, timeline seek/play/rate/step, numeric plotting, CSV export, recording and timing-gap analysis.
+- [x] Phase 4 Humble smoke check — a native `rosbag2_py` SQLite3 fixture was discovered, decoded, analysed and exported. MCAP remains dependent on an installed ROS storage plugin and was unavailable on this host.
 - [ ] Phase 5 — diagnostic findings, logs and reports.
 - [ ] Phase 6 — optional Test Tools, installer, Pi/Jetson performance and final release checks.
 
@@ -19,6 +20,16 @@
 - Sensor previews are sampled (default 2 Hz, maximum 5 Hz). Camera output is at most 640×480 JPEG; raw RGB/BGR/RGBA/BGRA/mono8 and compressed JPEG/PNG are supported. Depth encodings are reported as unsupported.
 - TF retains up to 2,000 observed relationships across watched TF topics; preview messages retain at most 256 transforms. It is a current observation model, not a historical TF2 lookup buffer, so rate limiting may omit short-lived transitions.
 - Motion keeps 60 seconds / 1,200 samples per widget; up to 16 widgets. Units are labels, without conversion or synchronization of separate topics. Sensor page allows eight viewers.
-- Renderers accept source-labelled samples but bag loading/playback is still Phase 4.
+- Bag playback is local to Bag Studio and never republishes into the ROS graph. It reads bounded message windows as the timeline advances.
 - Saved layouts store workspace configuration, not live data, credentials, window geometry or dock sizes. Server connection configuration still requires editing its configuration file and restarting.
 - No Pi/Jetson performance or Jazzy compatibility claim is made.
+
+## 2026-10-14 bounded implementation session
+
+- Shared offline selection and persistent timeline now feed recorded snapshots to Inspector, Signals, Motion and sensor previews. Numeric schemas come from the bag's message types; latest-at-cursor queries support backward seek.
+- Real Humble SQLite LaserScan smoke check passes: previews, recording/header clock distinction, numeric schema and backward seek. UI browser acceptance is still pending.
+- Diagnostics page runs bag findings or observed live topic/TF checks and exports JSON evidence reports.
+- Added read-only dependency check and repeatable recorded-scan verification scripts.
+- Phase 5 remains partial: continuous ROS log capture, correlation, expectation profiles and incident navigation are still needed.
+- Phase 6 remains partial: installer, gated Test Tools, sustained Pi/Jetson performance and Jazzy/MCAP acceptance are still needed.
+- Offline playback currently samples latest-at-cursor messages; it is not lossless streaming of every recorded message. Unified offline TF currently uses the latest message from each recorded TF topic and may omit edges emitted only in earlier messages.

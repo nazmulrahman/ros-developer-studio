@@ -4,7 +4,7 @@ import { Icon } from "../components/Icon";
 import { Gate } from "../components/Gate";
 import { Empty, Notice } from "../components/ui";
 import { Plot } from "../plots/Plot";
-import { api } from "../services/api";
+import { api, topicApi } from "../services/api";
 import { useApp, useDock } from "../services/app";
 import { fmtNum } from "../services/format";
 import { useChannel, useLive } from "../services/live";
@@ -13,7 +13,7 @@ import type { FieldInfo, SampleEvent, TopicDetail } from "../types/api";
 interface SeriesCfg { id: string; topic: string; path: string; type: string; label: string; color: string }
 interface Buf { t: number[]; v: number[] }
 interface Stat { latest: number | null; min: number | null; max: number | null; avg: number | null; n: number }
-const COLORS = ["#49B6E8", "#34C995", "#F5AD57", "#EF6464", "#B58CFF", "#E6D36F", "#7FD1B9", "#FF8FB1"];
+const COLORS = ["#FF4F6E", "#3DDC97", "#FFBE3D", "#5CC8FF", "#B58CFF", "#E6D36F", "#7FE3C0", "#FF8FB1"];
 const WINDOWS = [10, 30, 60, 300, 600];
 const RATES = [1, 2, 5, 10, 20, 50];
 const KEEP_S = 600, MAX_PTS = 12000;
@@ -32,7 +32,7 @@ function load() {
 }
 
 export function SignalsPage() {
-  const { watch, unwatch, graph, status } = useLive();
+  const { watch, unwatch, graph, status, bag, cursor } = useLive();
   const { selectedTopic } = useApp();
   const saved = useRef(load()).current;
   const [series, setSeries] = useState<SeriesCfg[]>(saved?.series ?? []);
@@ -59,7 +59,7 @@ export function SignalsPage() {
   useEffect(() => {
     setDetail(null); setDetailErr(null);
     if (!topic) return;
-    const h = setTimeout(() => api<TopicDetail>(`/api/live/topic?name=${encodeURIComponent(topic)}`).then(setDetail).catch(e => setDetailErr(String(e.message ?? e))), 250);
+    const h = setTimeout(() => topicApi<TopicDetail>(topic).then(setDetail).catch(e => setDetailErr(String(e.message ?? e))), 250);
     return () => clearTimeout(h);
   }, [topic, graph.updated]);
 
@@ -74,7 +74,11 @@ export function SignalsPage() {
   useChannel("watch_error", (e: { topic: string; message: string }) => { if (watched.current.has(e.topic)) setWatchErrs(w => [...w.filter(x => !x.startsWith(e.topic)), `${e.topic}: ${e.message}`]); });
 
   // bounded ingestion
+  useChannel("source_reset", () => { bufs.current.clear(); });
+  const lastRecorded = useRef(new Map<string,number>());
+  useChannel("source_reset", () => lastRecorded.current.clear());
   useChannel("sample", (e: SampleEvent) => {
+    if ((e as any).source_mode === "bag") { if(lastRecorded.current.get(e.topic) === e.t_ns) return; lastRecorded.current.set(e.topic,e.t_ns); }
     if (!e.values) return;
     const t = e.t_ns / 1e9;
     for (const s of seriesRef.current) {
@@ -105,12 +109,12 @@ export function SignalsPage() {
     setFrame({ data, xRange: [from, to], stats });
   }, [view, windowS]);
 
-  useEffect(() => { compute(Date.now() / 1000); }, [compute, series, paused]);
+  useEffect(() => { compute(bag && status?.mode === "offline" ? cursor / 1e9 : Date.now() / 1000); }, [compute, series, paused]);
   useEffect(() => {
     if (paused) return;
-    const h = setInterval(() => compute(Date.now() / 1000), 250);
+    const h = setInterval(() => compute(bag && status?.mode === "offline" ? cursor / 1e9 : Date.now() / 1000), 250);
     return () => clearInterval(h);
-  }, [paused, compute]);
+  }, [paused, compute, cursor, bag, status?.mode]);
 
   const add = (f: FieldInfo, path: string) => {
     if (series.some(s => s.topic === topic && s.path === path)) return;
@@ -119,7 +123,7 @@ export function SignalsPage() {
     setIdx(null);
   };
   const remove = (id: string) => { setSeries(s => s.filter(x => x.id !== id)); bufs.current.delete(id); };
-  const clear = () => { bufs.current.clear(); compute(Date.now() / 1000); };
+  const clear = () => { bufs.current.clear(); compute(bag && status?.mode === "offline" ? cursor / 1e9 : Date.now() / 1000); };
   const pan = (dir: -1 | 1) => {
     const [a, b] = frame.xRange ?? [Date.now() / 1000 - windowS, Date.now() / 1000];
     const d = (b - a) * 0.25 * dir; setView({ min: a + d, max: b + d }); setPaused(true);

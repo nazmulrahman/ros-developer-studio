@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import { api } from "./api";
+import { api, setApiBag } from "./api";
 import type { Graph, LiveStatus } from "../types/api";
 
 export type WsState = "idle" | "connecting" | "open" | "closed" | "unauthorized";
@@ -7,7 +7,9 @@ export interface WatchSpec { hz: number; payload?: boolean; fields?: string[]; v
 export interface AppEvent { t: number; level: "info" | "warn" | "error"; text: string }
 type Handler = (ev: any) => void;
 
+export interface ActiveBag { bag_id: string; path: string; start_ns: number; duration_ns: number; topics: { name: string; type: string; count: number }[] }
 interface Ctx {
+  bag: ActiveBag | null; selectBag: (b: ActiveBag) => Promise<void>; cursor: number; seek: (v: number) => void; playing: boolean; setPlaying: (v: boolean) => void; rate: number; setRate: (v: number) => void;
   status: LiveStatus | null; wsState: WsState;
   graph: { data: Graph | null; loading: boolean; error: string | null; updated: number | null };
   refreshGraph: () => void;
@@ -27,6 +29,10 @@ export function useChannel(ch: string, fn: Handler) {
 }
 
 export function LiveProvider({ token, children }: { token: string; children: ReactNode }) {
+  const [bag, setBag] = useState<ActiveBag | null>(null);
+  const [cursor, setCursor] = useState(0); const [playing, setPlaying] = useState(false); const [rate, setRate] = useState(1);
+  const offlineRef = useRef(false);
+  const cursorRef = useRef(0); cursorRef.current = cursor;
   const [status, setStatus] = useState<LiveStatus | null>(null);
   const [wsState, setWsState] = useState<WsState>("idle");
   const [graph, setGraph] = useState<Ctx["graph"]>({ data: null, loading: false, error: null, updated: null });
@@ -46,6 +52,39 @@ export function LiveProvider({ token, children }: { token: string; children: Rea
     return () => { s!.delete(fn); };
   }, []);
 
+  const selectBag = useCallback(async (b: ActiveBag) => {
+    await api("/api/session/mode", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({mode:"offline"})});
+    setApiBag(b.bag_id); setBag(b); setCursor(b.start_ns); setPlaying(false);
+  }, []);
+  const seek = useCallback((v: number) => { setCursor(v); handlers.current.get("source_reset")?.forEach(h => h({})); }, []);
+  useEffect(() => {
+    if (!bag || !playing) return;
+    const timer = window.setInterval(() => setCursor(v => { const next = Math.min(bag.start_ns + bag.duration_ns, v + rate * 200_000_000); if (next >= bag.start_ns + bag.duration_ns) setPlaying(false); return next; }), 200);
+    return () => clearInterval(timer);
+  }, [bag, playing, rate]);
+  useEffect(() => {
+    if (!bag || status?.mode !== "offline") { setApiBag(null); return; }
+    setApiBag(bag.bag_id);
+    setGraph({data:{nodes:[],topics:bag.topics.map(t=>({name:t.name,types:[t.type],publishers:0,subscribers:0})),services:[],actions:[],warnings:["Recorded topics; publisher and node identities are not available from bag metadata."]},loading:false,error:null,updated:Date.now()});
+    let stopped = false, busy = false;
+    const delivered = new Map<string,string>();
+    const poll = async () => {
+      if (busy) return; busy = true;
+      await Promise.all([...watches.current.keys()].map(async topic => {
+        try {
+          const ev = await api<any>(`/api/bags/${bag.bag_id}/snapshot?topic=${encodeURIComponent(topic)}&cursor_ns=${Math.round(cursorRef.current)}`);
+          if (!stopped) {
+            if (ev) {
+              const key = `${ev.stamps.record_ns}:${Math.round(cursorRef.current)}`;
+              if (delivered.get(topic) !== key) { delivered.set(topic,key); handlers.current.get("sample")?.forEach(h=>h(ev)); }
+            } else { delivered.delete(topic); handlers.current.get("sample_missing")?.forEach(h=>h({topic})); }
+          }
+        } catch(e) { if (!stopped) handlers.current.get("watch_error")?.forEach(h=>h({topic,message:String(e)})); }
+      })); busy = false;
+    };
+    void poll(); const timer = window.setInterval(()=>void poll(),200);
+    return () => { stopped=true;clearInterval(timer); };
+  }, [bag, status?.mode]);
   const refreshGraph = useCallback(() => {
     setGraph(g => ({ ...g, loading: true }));
     api<Graph>("/api/live/graph")
@@ -68,6 +107,7 @@ export function LiveProvider({ token, children }: { token: string; children: Rea
       ws.onmessage = e => {
         const ev = JSON.parse(e.data);
         if (ev.ch === "status") setStatus(ev);
+        if (ev.ch === "sample" && ev.source_mode !== "bag" && offlineRef.current) return;
         if (ev.ch === "watch_error") log("error", `${ev.topic}: ${ev.message}`);
         if (ev.ch === "host_error") log("warn", `Host metrics: ${ev.error}`);
         handlers.current.get(ev.ch)?.forEach(h => h(ev));
@@ -95,8 +135,9 @@ export function LiveProvider({ token, children }: { token: string; children: Rea
     prevAgent.current = key;
   }, [status, log]);
 
+  offlineRef.current = status?.mode === "offline";
   const live = status?.mode === "live" && status.agent.state === "connected" && status.ros?.available === true;
-  useEffect(() => { if (live) refreshGraph(); else setGraph({ data: null, loading: false, error: null, updated: null }); }, [live, refreshGraph]);
+  useEffect(() => { if (live) refreshGraph(); else if (!bag || status?.mode !== "offline") setGraph({ data: null, loading: false, error: null, updated: null }); }, [live, refreshGraph, bag, status?.mode]);
   useEffect(() => on("graph", () => {
     clearTimeout(debounce.current); debounce.current = window.setTimeout(() => { if (live) refreshGraph(); }, 300);
   }), [on, live, refreshGraph]);
@@ -105,5 +146,5 @@ export function LiveProvider({ token, children }: { token: string; children: Rea
   const unwatch = useCallback((topic: string) => { if (watches.current.delete(topic)) send({ op: "unwatch", topic }); }, [send]);
   const watchHost = useCallback((iv: number | null) => { hostIv.current = iv; send({ op: "host", interval_s: iv }); }, [send]);
 
-  return <LiveCtx.Provider value={{ status, wsState, graph, refreshGraph, watch, unwatch, watchHost, on, events }}>{children}</LiveCtx.Provider>;
+  return <LiveCtx.Provider value={{ bag, selectBag, cursor, seek, playing, setPlaying, rate, setRate, status, wsState, graph, refreshGraph, watch, unwatch, watchHost, on, events }}>{children}</LiveCtx.Provider>;
 }

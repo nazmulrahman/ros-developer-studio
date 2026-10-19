@@ -45,4 +45,9 @@ def load_settings(path: str | None = None) -> Settings:
     env_roots = os.environ.get("STUDIO_WORKSPACE_ROOTS")
     if env_roots:
         s.workspace_roots = [x for x in env_roots.split(os.pathsep) if x]
+    env_bags = os.environ.get("STUDIO_BAG_DIRS")
+    if env_bags:
+        s.bag_dirs = [x for x in env_bags.split(os.pathsep) if x]
+    if os.environ.get("STUDIO_RECORD_DIR"):
+        s.record_dir = os.environ["STUDIO_RECORD_DIR"]
     return s

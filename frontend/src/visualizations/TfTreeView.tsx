@@ -13,11 +13,11 @@ function Canvas({ snapshot, selected, onSelect, search }: { snapshot: TfSnapshot
     const nodeRows: Node[] = snapshot.frames.map((frame, i) => ({ id: frame, position: { x: 0, y: i * 80 }, data: { label: frame }, className: `tf-frame ${snapshot.roots.includes(frame) ? "root" : ""} ${query && !frame.toLowerCase().includes(query) ? "dim" : ""}` }));
     const edgeRows: Edge[] = snapshot.edges.map(edge => ({ id: edge.id, source: edge.parent, target: edge.child, label: edge.static ? "static" : edge.stale ? `${edge.age_s.toFixed(1)}s stale` : undefined,
       markerEnd: { type: MarkerType.ArrowClosed }, animated: !edge.static && !edge.stale,
-      style: { stroke: edge.id === selected?.id ? "#49B6E8" : edge.stale || !edge.valid_rotation ? "#E06C75" : edge.static ? "#B58CFF" : "#607C91", strokeWidth: edge.id === selected?.id ? 2.5 : 1.4, strokeDasharray: edge.static ? "5 3" : undefined }, data: { tf: edge } }));
+      style: { stroke: edge.id === selected?.id ? "#FF4F6E" : edge.stale || !edge.valid_rotation ? "#FF5C64" : edge.static ? "#B58CFF" : "#6A7192", strokeWidth: edge.id === selected?.id ? 2.5 : 1.4, strokeDasharray: edge.static ? "5 3" : undefined }, data: { tf: edge } }));
     return { nodes: autoLayout(nodeRows, edgeRows, "LR"), edges: edgeRows };
   }, [snapshot, selected?.id, search]);
   return <div className="tf-canvas"><ReactFlow nodes={nodes} edges={edges} fitView minZoom={.1} maxZoom={2.5} nodesDraggable nodesConnectable={false} elementsSelectable onEdgeClick={(_, edge) => onSelect((edge.data as { tf?: TfEdge } | undefined)?.tf ?? null)} onPaneClick={() => onSelect(null)}>
-    <Background variant={BackgroundVariant.Dots} gap={18} size={1} color="#3A4650" /><MiniMap pannable zoomable nodeColor={n => n.className?.toString().includes("root") ? "#34C995" : "#49B6E8"} maskColor="rgba(7,10,14,.72)" /><Controls showInteractive={false} />
+    <Background variant={BackgroundVariant.Dots} gap={18} size={1} color="#444963" /><MiniMap pannable zoomable nodeColor={n => n.className?.toString().includes("root") ? "#3DDC97" : "#FF4F6E"} maskColor="rgba(8,9,15,.72)" /><Controls showInteractive={false} />
   </ReactFlow></div>;
 }
 

@@ -16,3 +16,7 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   return r.json() as Promise<T>;
 }
 export const health = () => fetch("/api/health").then(r => r.json() as Promise<{ status: string; version: string }>);
+
+let activeBag: string | null = null;
+export const setApiBag = (id: string | null) => { activeBag = id; };
+export const topicApi = <T,>(topic: string) => api<T>(activeBag ? `/api/bags/${activeBag}/topic?name=${encodeURIComponent(topic)}` : `/api/live/topic?name=${encodeURIComponent(topic)}`);

@@ -2,7 +2,9 @@
 
 Universal ROS 2 (Humble/Jazzy) monitoring and analysis tool. Read-only by default. Independent of any robot package.
 
-**Status:** Phase 2's demo-node run is confirmed by the user. Phase 3 functionality is complete: Motion field mappings, sensor previews, unified TF hierarchy and diagnostics, read-only parameters, Settings, saved layouts, and ROS 2 Package Explorer. Humble synthetic ROS and browser acceptance pass; robot/Jazzy and Pi/Jetson release acceptance remain. Phases 4–6 remain unfinished. See `PROGRESS.md`, `docs/TESTING.md`, and `docs/PACKAGE_EXPLORER.md`.
+**Status:** Phases 1–3 are implemented; Phase 4 has a working bag reader and shared sampled playback, with remaining acceptance and TF-history work. Bag Studio discovers configured SQLite3/MCAP bags, reads them without publishing, provides timeline controls, decoded messages, numeric plots, CSV export, timing analysis and controlled recording. Humble SQLite3 verification passes; MCAP needs the corresponding ROS storage plugin. Diagnostics and release work remain in Phases 5–6. See `PROGRESS.md`, `docs/TESTING.md`, and `docs/BAG_STUDIO.md`.
+
+The product is organized around an investigation loop—observe, detect, correlate, explain and verify—rather than passive dashboards. See `docs/DIAGNOSTIC_STRATEGY.md` for the finding contract and shared live/offline direction.
 
 ## Install
 Needs Python ≥ 3.10 and Node ≥ 18. **Use a virtual environment** (Ubuntu 22.04 ships pydantic 1.x, which is too old):
@@ -40,4 +42,19 @@ For isolated real-Humble verification, source ROS and run `.venv/bin/python -m s
 - **Settings:** adjust preview/Motion rates and stale-data threshold; save or restore workspace layouts. Defaults reopen with the workspaces. Backend JSON persistence uses `config/preferences.json` (override with `STUDIO_PREFERENCES`). No credentials are stored in layouts.
 - **Package Explorer:** use **Add workspace** to browse and approve a folder on the backend computer, or preconfigure roots with `[workspaces].roots`; then inspect packages, files, dependency evidence, launch declarations, or the connected live graph. See `docs/PACKAGE_EXPLORER.md` for modes, safety rules, and limits.
 
-Camera processing requires Pillow (included in requirements). Without it, other viewers still work and the camera reports its missing dependency. TF currently shows sampled per-topic relationships, not a complete transform graph. Sensor rendering is reusable for bags, but offline playback is not yet implemented.
+## Bag Studio workflow
+- Configure one or more allowed library roots in `[bags].directories` and the recording destination in `[bags].record_dir`. Both may point outside the Studio project. Restart the backend after changing them.
+- Open **Bag Studio**, choose a discovered bag, select a topic and use the timeline, playback speed or step controls. Load a window to inspect decoded values, select a numeric field to plot it, or export the topic as CSV.
+- Use the recording bar to record selected topic names or all topics. Recording invokes `ros2 bag record`, so start Studio in a sourced ROS environment. Stop recording from the same bar to finalize the bag.
+- Bag files stay inside the configured roots. Symlinks cannot escape them. Playback reads files directly and does not publish recorded messages.
+
+Camera processing requires Pillow (included in requirements). Without it, other viewers still work and the camera reports its missing dependency. TF shows a bounded observed hierarchy rather than a historical TF2 lookup buffer. MCAP reading requires the ROS 2 MCAP storage plugin for the installed distribution; bags whose message packages are unavailable remain inspectable at metadata/raw-message level.
+
+## Installation and recorded-data checks
+
+After sourcing ROS and activating the virtual environment:
+```bash
+python -m scripts.check_dependencies
+python -m scripts.verify_bag_snapshot
+```
+Open a bag in Bag Studio, then switch to Visualizations and add its `/scan` viewer. The persistent recording toolbar controls the shared cursor. Diagnostics runs evidence checks and exports a JSON report. Recorded samples use recording time and retain header time separately; no receive timestamp is invented.

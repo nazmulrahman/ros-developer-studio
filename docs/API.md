@@ -1,4 +1,4 @@
-# API reference (Phases 2–3)
+# API reference (Phases 2–4)
 Auth: `Authorization: Bearer <token>` for REST, `?token=` for WebSockets. Generated schema: `/docs`, snapshot `docs/openapi.json`.
 
 ## REST
@@ -18,8 +18,13 @@ Auth: `Authorization: Bearer <token>` for REST, `?token=` for WebSockets. Genera
 | `GET /api/live/subscriptions` | topics currently subscribed by the agent |
 | `GET /api/host/metrics` | one host sample (agent machine) |
 | `GET /api/app/diagnostics` | backend/agent memory, CPU, dropped events |
+| `GET /api/bags`, `POST /api/bags/open` | restricted bag library and open-by-path |
+| `GET /api/bags/{id}/metadata`, `/topics`, `/messages` | bag details and bounded decoded message windows |
+| `GET /api/bags/{id}/analysis` | per-topic periods, gaps and timestamp reversals |
+| `POST /api/bags/{id}/export` | bounded topic CSV download |
+| `GET /api/record/status`, `POST /api/record/start`, `/stop` | controlled `ros2 bag record` lifecycle |
 Errors: `503 agent_unavailable`, `503 ros_unavailable`, `404 topic_not_found|node_not_found`, `422 unsupported_type`.
-Still `501`: `/api/live/logs`, `/api/series/*`, bags, record, diagnostics findings, test tools (later phases).
+Still `501`: `/api/live/logs`, `/api/series/*`, diagnostics findings and test tools (later phases).
 
 ## `WS /ws/live`
 Client → server: `{op:"watch", topic, hz, payload, fields[], visual?}` · `{op:"unwatch", topic}` · `{op:"host", interval_s|null}`.

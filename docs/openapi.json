@@ -2,7 +2,7 @@
  "openapi": "3.1.0",
  "info": {
   "title": "ROS Developer Studio",
-  "description": "Live analysis, sensor previews, parameters and layouts are implemented (phases 2\u20133). Endpoints returning 501 are planned for later phases.",
+  "description": "Live analysis, sensor previews, parameters, layouts and offline Bag Studio are implemented (phases 2\u20134).",
   "version": "0.0.1"
  },
  "paths": {
@@ -58,7 +58,7 @@
      "core"
     ],
     "summary": "Set Mode",
-    "description": "Switching to offline stops the live source; live starts it (offline bag source arrives in phase 4).",
+    "description": "Switching to offline stops the live source; live starts it.",
     "operationId": "set_mode_api_session_mode_post",
     "requestBody": {
      "content": {
@@ -1001,6 +1001,8 @@
       "required": false,
       "schema": {
        "type": "integer",
+       "maximum": 1000,
+       "minimum": 1,
        "default": 100,
        "title": "Limit"
       }
@@ -1051,6 +1053,16 @@
       }
      }
     ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ExportRequest"
+       }
+      }
+     }
+    },
     "responses": {
      "200": {
       "description": "Successful Response",
@@ -1080,6 +1092,51 @@
     ],
     "summary": "Bag Analysis",
     "operationId": "bag_analysis_api_bags__bag_id__analysis_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "bag_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Bag Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/bags/{bag_id}/findings": {
+   "get": {
+    "tags": [
+     "bags"
+    ],
+    "summary": "Bag Findings",
+    "operationId": "bag_findings_api_bags__bag_id__findings_get",
     "security": [
      {
       "HTTPBearer": []
@@ -1208,6 +1265,177 @@
       "HTTPBearer": []
      }
     ]
+   }
+  },
+  "/api/bags/{bag_id}/snapshot": {
+   "get": {
+    "tags": [
+     "bags"
+    ],
+    "summary": "Bag Snapshot",
+    "operationId": "bag_snapshot_api_bags__bag_id__snapshot_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "bag_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Bag Id"
+      }
+     },
+     {
+      "name": "topic",
+      "in": "query",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Topic"
+      }
+     },
+     {
+      "name": "cursor_ns",
+      "in": "query",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Cursor Ns"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/bags/{bag_id}/topic": {
+   "get": {
+    "tags": [
+     "bags"
+    ],
+    "summary": "Bag Topic Detail",
+    "operationId": "bag_topic_detail_api_bags__bag_id__topic_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "bag_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Bag Id"
+      }
+     },
+     {
+      "name": "name",
+      "in": "query",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Name"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/bags/{bag_id}/tf": {
+   "get": {
+    "tags": [
+     "bags"
+    ],
+    "summary": "Bag Tf",
+    "operationId": "bag_tf_api_bags__bag_id__tf_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "bag_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Bag Id"
+      }
+     },
+     {
+      "name": "cursor_ns",
+      "in": "query",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Cursor Ns"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
    }
   },
   "/api/diagnostics/findings": {
@@ -2074,6 +2302,48 @@
      "path"
     ],
     "title": "BagOpenRequest"
+   },
+   "ExportRequest": {
+    "properties": {
+     "topic": {
+      "type": "string",
+      "title": "Topic"
+     },
+     "start_ns": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Start Ns"
+     },
+     "end_ns": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "End Ns"
+     },
+     "limit": {
+      "type": "integer",
+      "maximum": 10000.0,
+      "minimum": 1.0,
+      "title": "Limit",
+      "default": 10000
+     }
+    },
+    "type": "object",
+    "required": [
+     "topic"
+    ],
+    "title": "ExportRequest"
    },
    "Finding": {
     "properties": {
