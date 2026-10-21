@@ -5,6 +5,7 @@ __pycache__/
 config/studio.toml
 config/preferences.json
 config/preferences.json.tmp
+config/diagnostic_profiles.json
 config/workspace_roots.json
 config/workspace_roots.json.tmp
 config/package_layouts/

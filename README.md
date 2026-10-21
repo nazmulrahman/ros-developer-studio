@@ -24,6 +24,20 @@ Test Tools, installer work, hardware acceptance, and final release checks are no
 
 Subscriptions are opt-in: the app does not subscribe to every topic automatically. Bag playback reads recordings directly and does not publish messages into the live ROS graph.
 
+## Screenshots
+
+| Overview | Package Explorer |
+|---|---|
+| ![ROS Developer Studio overview dashboard](docs/screenshots/overview.png) | ![Package Explorer workspace graph](docs/screenshots/package-explorer.png) |
+
+| Motion | Host Metrics |
+|---|---|
+| ![Configurable Motion feedback and reference plots](docs/screenshots/motion.png) | ![Host resource metrics and history charts](docs/screenshots/host-metrics.png) |
+
+| Bag Studio |
+|---|
+| ![Bag Studio recording library](docs/screenshots/bag-studio.png) |
+
 ## Architecture
 
 The browser UI is built with React, TypeScript, and Vite. A FastAPI backend serves the UI and coordinates data. For live ROS inspection, a separate Python agent uses `rclpy` on the ROS host. Offline bag analysis does not require a running ROS graph or agent, though ROS message packages and storage plugins may be needed to decode some recordings.
