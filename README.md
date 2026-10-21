@@ -58,3 +58,19 @@ python -m scripts.check_dependencies
 python -m scripts.verify_bag_snapshot
 ```
 Open a bag in Bag Studio, then switch to Visualizations and add its `/scan` viewer. The persistent recording toolbar controls the shared cursor. Diagnostics runs evidence checks and exports a JSON report. Recorded samples use recording time and retain header time separately; no receive timestamp is invented.
+## Bag Studio workflow
+- Configure one or more allowed library roots in `[bags].directories` and the recording destination in `[bags].record_dir`. Both may point outside the Studio project. Restart the backend after changing them.
+- Open **Bag Studio**, choose a discovered bag, select a topic and use the timeline, playback speed or step controls. Load a window to inspect decoded values, select a numeric field to plot it, or export the topic as CSV.
+- Use the recording bar to record selected topic names or all topics. Recording invokes `ros2 bag record`, so start Studio in a sourced ROS environment. Stop recording from the same bar to finalize the bag.
+- Bag files stay inside the configured roots. Symlinks cannot escape them. Playback reads files directly and does not publish recorded messages.
+
+Camera processing requires Pillow (included in requirements). Without it, other viewers still work and the camera reports its missing dependency. TF shows a bounded observed hierarchy rather than a historical TF2 lookup buffer. MCAP reading requires the ROS 2 MCAP storage plugin for the installed distribution; bags whose message packages are unavailable remain inspectable at metadata/raw-message level.
+
+## Installation and recorded-data checks
+
+After sourcing ROS and activating the virtual environment:
+```bash
+python -m scripts.check_dependencies
+python -m scripts.verify_bag_snapshot
+```
+Open a bag in Bag Studio, then switch to Visualizations and add its `/scan` viewer. The persistent recording toolbar controls the shared cursor. Diagnostics runs evidence checks and exports a JSON report. Recorded samples use recording time and retain header time separately; no receive timestamp is invented.
