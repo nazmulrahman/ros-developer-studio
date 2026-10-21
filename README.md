@@ -1,5 +1,7 @@
 # ROS Developer Studio
 
+Created by **Nazmul Rahman Arnab**.
+
 ROS Developer Studio is a local workspace for inspecting a ROS 2 system, investigating telemetry, and analyzing recorded bags. It brings graph discovery, opt-in topic monitoring, visualizations, host metrics, and evidence-based diagnostics into one browser UI.
 
 The project is designed to be **read-only by default** and works independently of a robot-specific package. It is an engineering and debugging tool, not a robot control, navigation, or fleet-management system.
@@ -145,4 +147,4 @@ This uses synthetic publishers in an isolated ROS domain; it is not a hardware a
 
 ## License
 
-This repository does not currently include a license file. Please check with the maintainers before reusing or redistributing the code.
+This project is licensed under the MIT License. See [LICENSE](LICENSE).
