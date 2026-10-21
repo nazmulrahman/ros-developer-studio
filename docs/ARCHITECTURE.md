@@ -90,7 +90,7 @@ Auth: `Authorization: Bearer <token>` (REST) / `?token=` (WS). Token generated a
 | Series | `POST /api/series/query` (live buffer or bag range, field paths → arrays) · `POST /api/series/export` (CSV/JSON) |
 | TF / logs | `GET /api/live/tf` · `GET /api/live/logs` |
 | Host | `GET /api/host/metrics` · `GET /api/host/processes` · `WS /ws/live` channel `host` |
-| Bags | `GET /api/bags` · `POST /api/bags/open` · `GET /api/bags/{id}/metadata` · `GET /api/bags/{id}/topics` · `GET /api/bags/{id}/messages` · `POST /api/bags/{id}/export` · `GET /api/bags/{id}/analysis` · `WS /ws/bag/{id}` (play/pause/seek/rate/step) |
+| Bags | `GET /api/bags` · `POST /api/bags/open` · `GET /api/bags/{id}/metadata` · `GET /api/bags/{id}/topics` · `GET /api/bags/{id}/messages` · `POST /api/bags/{id}/export` · `GET /api/bags/{id}/analysis`; the browser timeline performs play/pause/seek/rate/step over bounded message windows |
 | Recording | `GET /api/record/status` · `POST /api/record/start` · `POST /api/record/stop` |
 | Diagnostics | `GET /api/diagnostics/findings?source=` |
 | Layouts | `GET/POST /api/layouts` · `PUT/DELETE /api/layouts/{id}` |
@@ -114,7 +114,7 @@ Pages: Overview · ROS Explorer · Topic Inspector · Signals · Motion · Visua
 ## 10. Implementation priorities
 1. **Phase 2 core:** auth + session, agent graph snapshot, topic list/info, opt-in subscription, Hz/bandwidth/status enum, Inspector tree, basic host metrics, WS plumbing.
 2. **Phase 3:** series engine + plots (uPlot), field mapping, Motion/Visualizations adapters, TF, saved layouts.
-3. **Phase 4:** `BagSource` (open/metadata/messages/seek/play), offline player, recorder, bag indexer. *Early spike:* verify `rosbag2_py` read + MCAP on Humble and Jazzy before building on it.
+3. **Phase 4:** `BagSource` (open/metadata/messages/seek/play), offline player, recorder and timing analysis. Implemented; SQLite3 verified on Humble. MCAP remains conditional on the installed ROS storage plugin and still needs Humble/Jazzy runtime acceptance.
 4. **Phase 5:** diagnostics engine, QoS findings, logs, reports.
 5. **Phase 6:** Test Tools, installer, dependency checks, tests, performance measurements.
 Each phase ends with: what was built, what was tested, what remains, known limits.

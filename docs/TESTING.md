@@ -47,4 +47,15 @@ These are synthetic integration checks, not hardware acceptance. The user separa
 
 This completes Phase 3 functionality. Robot/Jazzy and Pi/Jetson checks remain release acceptance because those environments were not available locally.
 
+## Phase 4 verification — 2026-10-13
+
+- The Python suite covers restricted-root enforcement, SQLite3 metadata, topic/message queries, bounded reads, timing-gap analysis, CSV export, authentication and recorder status.
+- A bag written by the installed ROS 2 Humble `rosbag2_py.SequentialWriter` was discovered and its three CDR-encoded `std_msgs/msg/Float64` messages decoded to `1.0`, `2.5` and `7.0`. Gap detection and CSV export passed against the same bag.
+- Frontend domain checks, strict TypeScript and the production build pass with the Bag Studio route and recording controls.
+- This host lists SQLite3 but no MCAP storage plugin. MCAP uses `rosbag2_py` and is supported when that plugin is installed, but it was not runtime-verified here. Recording is covered at the API/status boundary; no live robot topics were recorded during automated checks.
+
 The smoke script sets its domain/localhost/log/preferences environment before importing ROS and cleans up its publishers, agent and backend on exit. `--serve` keeps it running for browser checks until interrupted. Do not treat this synthetic fixture as robot telemetry.
+
+## Phase 5 verification status
+
+The Phase 5 implementation adds live `/rosout` and `/diagnostics` capture, saved numeric expectation profiles, live and bag incident-window correlation, incident navigation and JSON report export. Runtime regression coverage and browser acceptance have not yet been run for these additions. Live log and diagnostic buffers are bounded in-memory state and are cleared when the backend process exits.

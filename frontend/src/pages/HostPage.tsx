@@ -82,10 +82,10 @@ export function HostPage() {
           </div>
           <div className="card"><h2>Per-core CPU</h2><div className="bars">{last.cpu.per_core.map((p, i) => <div className="bar" key={i} title={`core ${i}: ${fmtNum(p, 1)}%`}><i style={{ height: `${p}%` }} /><span className="mono">{i}<br />{p.toFixed(0)}%</span></div>)}</div></div>
           <div className="charts">
-            {chart("CPU", [{ label: "CPU", color: "#49B6E8", v: h.cpu }], "%")}
-            {chart("Memory", [{ label: "RAM", color: "#34C995", v: h.mem }], "%")}
-            {chart("Network", [{ label: "Rx", color: "#49B6E8", v: h.rx }, { label: "Tx", color: "#F5AD57", v: h.tx }], "Mbit/s")}
-            {last.temperature_c != null && chart("Temperature", [{ label: "hottest sensor", color: "#EF6464", v: h.temp }], "°C")}
+            {chart("CPU", [{ label: "CPU", color: "#FF4F6E", v: h.cpu }], "%")}
+            {chart("Memory", [{ label: "RAM", color: "#3DDC97", v: h.mem }], "%")}
+            {chart("Network", [{ label: "Rx", color: "#FF4F6E", v: h.rx }, { label: "Tx", color: "#FFBE3D", v: h.tx }], "Mbit/s")}
+            {last.temperature_c != null && chart("Temperature", [{ label: "hottest sensor", color: "#FF5C64", v: h.temp }], "°C")}
             {last.gpu?.util_percent != null && chart("GPU load", [{ label: "GPU", color: "#B58CFF", v: h.gpu }], "%")}
           </div></>}
       </Gate>

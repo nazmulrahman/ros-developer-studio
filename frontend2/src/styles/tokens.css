@@ -1,0 +1,13 @@
+/* Midnight Dashboard — the only place colours are defined. */
+:root {
+  --bg: #171A26; --canvas: #1E2231; --panel: #272B3D; --panel-2: #30344A; --track: #1A1D2B;
+  --border: rgba(255,255,255,.09); --border-soft: rgba(255,255,255,.05);
+  --accent: #FF4F6E; --accent-2: #FFBE3D; --on-accent: #1C0A10;
+  --text: #F2F4FB; --text-2: #8E94AB;
+  --ok: #3DDC97; --warn: #FFBE3D; --err: #FF5C64;
+  --panel-hover: #30344A; --accent-dim: rgba(255,79,110,.14); --accent-line: rgba(255,79,110,.5);
+  --font-ui: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --radius: 12px; --radius-lg: 20px; --radius-xl: 28px; --gap: 14px; --pad: 14px; --ctl: 32px; --row: 40px;
+  --topbar-h: 56px; --sidebar-w: 216px; --sidebar-w-collapsed: 64px;
+}

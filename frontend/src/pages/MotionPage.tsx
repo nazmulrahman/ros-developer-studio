@@ -11,7 +11,7 @@ import type { SampleEvent } from "../types/api";
 
 const blank = { topic: "", path: "" };
 export function MotionPage() {
-  const { watch, unwatch, status, wsState } = useLive(); const prefs = usePreferences();
+  const { watch, unwatch, status, wsState, bag, cursor } = useLive(); const prefs = usePreferences();
   const [widgets, setWidgets, storageError] = useSaved(STORE_KEYS.motion, mappingList, [] as MotionWidget[]);
   const [label, setLabel] = useState(""); const [unit, setUnit] = useState("");
   const [measured, setMeasured] = useState<Mapping>(blank); const [reference, setReference] = useState<Mapping>(blank);
@@ -25,10 +25,15 @@ export function MotionPage() {
     topics.forEach((fields, topic) => watch(topic, { hz: prefs.motion_hz, fields: [...fields] }));
     return () => topics.forEach((_, topic) => unwatch(topic));
   }, [widgets, prefs.motion_hz, watch, unwatch]);
-  useEffect(() => { if (wsState !== "open" || status?.agent.state !== "connected" || status.mode !== "live") { buffers.current = {}; setFrame({}); } }, [wsState, status?.agent.state, status?.mode]);
+  useEffect(() => { if (wsState !== "open" || status?.agent.state !== "connected" || (status.mode !== "live" && !bag)) { buffers.current = {}; setFrame({}); } }, [wsState, status?.agent.state, status?.mode]);
   useEffect(() => { const ids = new Set(widgets.map(w => w.id)); for (const id of Object.keys(buffers.current)) if (!ids.has(id)) delete buffers.current[id]; }, [widgets]);
-  useEffect(() => { const timer = window.setInterval(() => { if (!paused) { setFrame({ ...buffers.current }); setNow(Date.now() / 1000); } }, 250); return () => clearInterval(timer); }, [paused]);
+  useEffect(() => { const timer = window.setInterval(() => { if (!paused) { setFrame({ ...buffers.current }); setNow(bag && status?.mode === "offline" ? cursor / 1e9 : Date.now() / 1000); } }, 250); return () => clearInterval(timer); }, [paused, cursor, bag, status?.mode]);
+  useChannel("source_reset", () => { buffers.current = {}; setFrame({}); });
+  const lastRecorded = useRef(new Map<string,number>());
+  useChannel("source_reset", () => lastRecorded.current.clear());
   useChannel("sample", (ev: SampleEvent) => {
+    if ((ev as any).source_mode === "bag") { if(lastRecorded.current.get(ev.topic) === ev.t_ns) return; lastRecorded.current.set(ev.topic,ev.t_ns); }
+
     widgets.forEach(w => [w.measured, w.reference].forEach((m, i) => { if (m?.topic === ev.topic) buffers.current[w.id] = appendPoint(buffers.current[w.id] ?? [], { t: ev.t_ns / 1e9, value: finite(ev.values?.[m.path]), reference: i === 1 }); }));
     setErrors(e => e[ev.topic] ? { ...e, [ev.topic]: "" } : e);
   });
@@ -45,7 +50,7 @@ export function MotionPage() {
       const command = [...points].reverse().find(p => p.reference); const stale = !latest || now - latest.t > prefs.stale_after_s;
       const times = [...new Set(points.map(p => p.t))].sort((a, b) => a - b);
       const values = new Map(points.filter(p => !p.reference).map(p => [p.t, p.value])); const refs = new Map(points.filter(p => p.reference).map(p => [p.t, p.value]));
-      const series = [{ label: "Measured", color: "#49B6E8" }, ...(w.reference ? [{ label: "Reference", color: "#F5AD57" }] : [])];
+      const series = [{ label: "Measured", color: "#FF4F6E" }, ...(w.reference ? [{ label: "Reference", color: "#FFBE3D" }] : [])];
       return <div className="card" key={w.id}><div className="row2"><strong>{w.label}</strong><span className="spacer" /><button aria-label={`Remove ${w.label}`} onClick={() => setWidgets(all => all.filter(x => x.id !== w.id))}>Remove</button></div>
         <div className="motion-value mono">{latest?.value == null ? "—" : latest.value.toFixed(3)} <small>{w.unit}</small></div><p className="muted">{!latest ? "Waiting for samples" : stale ? `Stale · last sample ${(now - latest.t).toFixed(1)} s ago` : "Receiving"}{latest?.value === null ? " · missing or non-finite field" : ""}</p>
         {w.reference && <p className="muted">Reference: {command?.value == null ? "—" : command.value.toFixed(3)} {w.unit}{command && now - command.t > prefs.stale_after_s ? " · stale" : ""}</p>}

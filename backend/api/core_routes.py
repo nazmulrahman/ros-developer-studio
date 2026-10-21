@@ -21,13 +21,13 @@ def session(request: Request):
     ros = (hub.status().get("ros") or {}).get("available", False)
     return SessionInfo(
         mode=hub.mode, version=VERSION, agent_connected=agent_ok,
-        capabilities={"live": agent_ok and bool(ros), "host_metrics": agent_ok, "offline_bags": False, "recording": False, "test_tools": False},
+        capabilities={"live": agent_ok and bool(ros), "host_metrics": agent_ok, "offline_bags": True, "recording": True, "test_tools": False},
         test_tools_enabled=state.test_tools_enabled)
 
 
 @router.post("/session/mode", response_model=SessionInfo, dependencies=[Depends(require_auth)])
 async def set_mode(req: ModeRequest, request: Request):
-    """Switching to offline stops the live source; live starts it (offline bag source arrives in phase 4)."""
+    """Switching to offline stops the live source; live starts it."""
     await request.app.state.hub.set_mode(req.mode)
     return session(request)
 

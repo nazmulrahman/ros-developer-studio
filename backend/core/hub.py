@@ -1,6 +1,7 @@
 """LiveHub: owns the agent connection, merges browser watches into one agent subscription per topic, fans out events."""
 from __future__ import annotations
 import asyncio, json, logging, time
+from collections import deque
 from dataclasses import dataclass, field
 
 from ..data_sources.live import AgentClient, AgentError, AgentUnavailable
@@ -48,6 +49,14 @@ class LiveHub:
         self.host_desired: float | None = None
         self.dropped_total = 0
         self.tf_previews: dict[str, dict] = {}
+        self.topic_evidence: dict[str, dict] = {}
+        self.logs: deque[dict] = deque(maxlen=5000)
+        self.diagnostic_events: deque[dict] = deque(maxlen=2000)
+        self.host_samples: deque[dict] = deque(maxlen=500)
+        self.latest_samples: dict[str, dict] = {}
+        self._diagnostic_topics: set[str] = set()
+        self.expectation_topics: set[str] = set()
+        self.expectation_fields: dict[str, set[str]] = {}
         self.tf_tree = TfTree()
 
     # ---------- lifecycle
@@ -59,6 +68,8 @@ class LiveHub:
     async def stop(self):
         self.tf_previews.clear()
         self.tf_tree.clear()
+        self.topic_evidence.clear()
+        self._diagnostic_topics.clear()
         if self.agent:
             await self.agent.stop()
             self.agent = None
@@ -94,6 +105,7 @@ class LiveHub:
         if state != "connected":
             self.tf_previews.clear()
             self.tf_tree.clear()
+            self._diagnostic_topics.clear()
         if state == "connected":
             await self._resync()
         self._broadcast(self.status_event())
@@ -105,10 +117,64 @@ class LiveHub:
             await self._agent_call("sub.set", args, topic)
         if self.host_desired:
             await self._agent_call("host.watch", {"interval_s": self.host_desired})
+        await self._ensure_diagnostic_watches()
+
+    async def _ensure_diagnostic_watches(self):
+        if not self.agent or self.agent.state != "connected" or self.mode != Mode.live:
+            return
+        for topic, type_name in (("/rosout", "rcl_interfaces/msg/Log"), ("/diagnostics", "diagnostic_msgs/msg/DiagnosticArray")):
+            if topic in self._diagnostic_topics:
+                continue
+            try:
+                info = await self.agent.request("topic.info", {"name": topic}, timeout=4)
+                if type_name not in info.get("types", []): continue
+                await self.agent.request("sub.set", {"topic": topic, "hz": 20, "payload": True, "fields": [], "visual": False}, timeout=4)
+                self._diagnostic_topics.add(topic)
+            except Exception:
+                continue
+        profiles = getattr(self, "diagnostic_profiles", None)
+        definitions = profiles.read() if profiles else []
+        self.expectation_topics = {profile["topic"] for profile in definitions}
+        self.expectation_fields = {}
+        for profile in definitions: self.expectation_fields.setdefault(profile["topic"], set()).add(profile["field"])
+        for topic, fields in self.expectation_fields.items():
+            try:
+                if topic not in self._diagnostic_topics:
+                    await self.agent.request("topic.info", {"name": topic}, timeout=4)
+                await self.agent.request("sub.set", {"topic": topic, "hz": 10, "payload": False, "fields": sorted(fields), "visual": False}, timeout=4)
+                self._diagnostic_topics.add(topic)
+            except Exception: continue
+
+    @staticmethod
+    def _items(value):
+        if isinstance(value, dict) and isinstance(value.get("items"), list): return value["items"]
+        return value if isinstance(value, list) else []
+
+    def _ingest_evidence(self, ev):
+        payload = ev.get("payload")
+        if not isinstance(payload, dict): return
+        stamp = ev.get("stamps", {}).get("receive_ns") or ev.get("t_ns")
+        stamp = int(stamp) if stamp is not None else None
+        if ev.get("topic") == "/rosout":
+            self.logs.append({"timestamp_ns": stamp, "level": int(payload.get("level", 0)),
+                "name": str(payload.get("name") or ""), "message": str(payload.get("msg") or ""),
+                "file": str(payload.get("file") or ""), "function": str(payload.get("function") or ""),
+                "line": int(payload.get("line", 0) or 0), "topic": "/rosout", "source_id": "live"})
+        elif ev.get("topic") == "/diagnostics":
+            for item in self._items(payload.get("status")):
+                if isinstance(item, dict):
+                    self.diagnostic_events.append({"timestamp_ns": stamp, "level": int(item.get("level", 0)),
+                        "name": str(item.get("name") or ""), "message": str(item.get("message") or ""),
+                        "hardware_id": str(item.get("hardware_id") or ""), "values": item.get("values", []),
+                        "topic": "/diagnostics", "source_id": "live"})
 
     async def _on_event(self, ev: dict):
         ch = ev["ch"]
         if ch == "sample":
+            if ev["topic"] in self.expectation_topics:
+                self.latest_samples[ev["topic"]] = {"stamps":ev.get("stamps",{}), "values":ev.get("values",{})}
+            if ev.get("topic") in ("/rosout", "/diagnostics"):
+                self._ingest_evidence(ev)
             if ev["topic"] in self.desired and ev.get("type") == "tf2_msgs/msg/TFMessage" and "visual" in ev:
                 self.tf_previews[ev["topic"]] = ev
                 if self.tf_tree.ingest(ev):
@@ -130,14 +196,21 @@ class LiveHub:
                     out["values"] = {k: ev["values"].get(k) for k in w.fields}
                 c.push(out)
         elif ch == "stats":
+            ev.setdefault("t_ns", time.time_ns())
+            self.topic_evidence[ev["topic"]] = ev
+            if len(self.topic_evidence) > 2000: self.topic_evidence.pop(next(iter(self.topic_evidence)))
             for c in list(self.clients):
                 if ev["topic"] in c.watches:
                     c.push(ev)
         elif ch == "host":
+            ev.setdefault("t_ns", time.time_ns())
+            self.host_samples.append(ev)
             for c in list(self.clients):
                 if c.host_interval:
                     c.push(ev)
         else:  # graph, ros_status, host_error
+            if ch == "graph" and self.mode == Mode.live:
+                asyncio.create_task(self._ensure_diagnostic_watches())
             if ch == "ros_status":
                 if self.agent and self.agent.info:
                     self.agent.info["ros"]["discovery"] = ev.get("discovery")

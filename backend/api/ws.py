@@ -45,9 +45,3 @@ async def ws_live(ws: WebSocket):
     finally:
         task.cancel()
         await hub.drop_client(client)
-
-
-@router.websocket("/ws/bag/{bag_id}")
-async def ws_bag(ws: WebSocket, bag_id: str):
-    await ws.accept()
-    await ws.close(code=1013, reason="not implemented: offline player (phase 4)")

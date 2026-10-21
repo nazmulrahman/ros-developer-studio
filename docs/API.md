@@ -1,4 +1,4 @@
-# API reference (Phases 2–3)
+# API reference (Phases 2–5)
 Auth: `Authorization: Bearer <token>` for REST, `?token=` for WebSockets. Generated schema: `/docs`, snapshot `docs/openapi.json`.
 
 ## REST
@@ -13,13 +13,24 @@ Auth: `Authorization: Bearer <token>` for REST, `?token=` for WebSockets. Genera
 | `GET /api/live/node?name=` | publishers/subscribers/services of one node |
 | `GET /api/live/parameters?name=/ns/node` | read-only parameters (at most 500); 3-second service deadline, HTTP 504 on timeout |
 | `GET /api/live/tf` | merged observed TF hierarchy: frames, transforms, roots, disconnected groups and diagnostics |
+| `GET /api/live/logs` | bounded `/rosout` buffer; optional `level`, `limit`, `since_ns`, `until_ns`, `search` filters |
+| `GET /api/diagnostics/findings` | evidence-backed live findings plus configured numeric expectations |
+| `GET/POST /api/diagnostics/profiles`, `DELETE /api/diagnostics/profiles/{id}` | persisted numeric expectations `{name,topic,field,minimum?,maximum?}`; maximum 20 |
+| `GET /api/diagnostics/correlate?timestamp_ns=&window_s=` | nearby logs, `/diagnostics`, topic statistics and host samples |
 | `GET/PUT /api/settings` | read server configuration + preferences; PUT accepts only `preview_hz` (0.5–5), `motion_hz` (1–50), `stale_after_s` (1–60) |
 | `GET/POST /api/layouts`, `PUT/DELETE /api/layouts/{id}` | authenticated layout CRUD; `{name, config:{signals?,motion?,visualizations?}}`; at most 32 layouts / 512 KiB total |
 | `GET /api/live/subscriptions` | topics currently subscribed by the agent |
 | `GET /api/host/metrics` | one host sample (agent machine) |
 | `GET /api/app/diagnostics` | backend/agent memory, CPU, dropped events |
+| `GET /api/bags`, `POST /api/bags/open` | restricted bag library and open-by-path |
+| `GET /api/bags/{id}/metadata`, `/topics`, `/messages` | bag details and bounded decoded message windows |
+| `GET /api/bags/{id}/analysis` | per-topic periods, gaps and timestamp reversals |
+| `GET /api/bags/{id}/findings` | bag findings and configured expectations, bounded to 10,000 samples per topic |
+| `GET /api/bags/{id}/correlate?timestamp_ns=&window_s=` | nearby recorded messages across up to 200 topics |
+| `POST /api/bags/{id}/export` | bounded topic CSV download |
+| `GET /api/record/status`, `POST /api/record/start`, `/stop` | controlled `ros2 bag record` lifecycle |
 Errors: `503 agent_unavailable`, `503 ros_unavailable`, `404 topic_not_found|node_not_found`, `422 unsupported_type`.
-Still `501`: `/api/live/logs`, `/api/series/*`, bags, record, diagnostics findings, test tools (later phases).
+Still `501`: `/api/series/*` and test tools (Phase 6).
 
 ## `WS /ws/live`
 Client → server: `{op:"watch", topic, hz, payload, fields[], visual?}` · `{op:"unwatch", topic}` · `{op:"host", interval_s|null}`.

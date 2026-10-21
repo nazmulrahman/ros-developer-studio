@@ -2,7 +2,7 @@
  "openapi": "3.1.0",
  "info": {
   "title": "ROS Developer Studio",
-  "description": "Live analysis, sensor previews, parameters and layouts are implemented (phases 2\u20133). Endpoints returning 501 are planned for later phases.",
+  "description": "Live analysis, offline Bag Studio, diagnostics, ROS log capture and evidence reports.",
   "version": "0.0.1"
  },
  "paths": {
@@ -58,7 +58,7 @@
      "core"
     ],
     "summary": "Set Mode",
-    "description": "Switching to offline stops the live source; live starts it (offline bag source arrives in phase 4).",
+    "description": "Switching to offline stops the live source; live starts it.",
     "operationId": "set_mode_api_session_mode_post",
     "requestBody": {
      "content": {
@@ -564,7 +564,9 @@
       "schema": {
        "anyOf": [
         {
-         "type": "string"
+         "type": "integer",
+         "maximum": 50,
+         "minimum": 0
         },
         {
          "type": "null"
@@ -579,8 +581,59 @@
       "required": false,
       "schema": {
        "type": "integer",
+       "maximum": 2000,
+       "minimum": 1,
        "default": 500,
        "title": "Limit"
+      }
+     },
+     {
+      "name": "since_ns",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Since Ns"
+      }
+     },
+     {
+      "name": "until_ns",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Until Ns"
+      }
+     },
+     {
+      "name": "search",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "maxLength": 200
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Search"
       }
      }
     ],
@@ -1001,6 +1054,8 @@
       "required": false,
       "schema": {
        "type": "integer",
+       "maximum": 1000,
+       "minimum": 1,
        "default": 100,
        "title": "Limit"
       }
@@ -1051,6 +1106,16 @@
       }
      }
     ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ExportRequest"
+       }
+      }
+     }
+    },
     "responses": {
      "200": {
       "description": "Successful Response",
@@ -1093,6 +1158,118 @@
       "schema": {
        "type": "string",
        "title": "Bag Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/bags/{bag_id}/findings": {
+   "get": {
+    "tags": [
+     "bags"
+    ],
+    "summary": "Bag Findings",
+    "operationId": "bag_findings_api_bags__bag_id__findings_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "bag_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Bag Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/bags/{bag_id}/correlate": {
+   "get": {
+    "tags": [
+     "bags"
+    ],
+    "summary": "Bag Correlate",
+    "operationId": "bag_correlate_api_bags__bag_id__correlate_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "bag_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Bag Id"
+      }
+     },
+     {
+      "name": "timestamp_ns",
+      "in": "query",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "minimum": 0,
+       "title": "Timestamp Ns"
+      }
+     },
+     {
+      "name": "window_s",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "number",
+       "maximum": 300,
+       "minimum": 0.1,
+       "default": 10,
+       "title": "Window S"
       }
      }
     ],
@@ -1210,6 +1387,177 @@
     ]
    }
   },
+  "/api/bags/{bag_id}/snapshot": {
+   "get": {
+    "tags": [
+     "bags"
+    ],
+    "summary": "Bag Snapshot",
+    "operationId": "bag_snapshot_api_bags__bag_id__snapshot_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "bag_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Bag Id"
+      }
+     },
+     {
+      "name": "topic",
+      "in": "query",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Topic"
+      }
+     },
+     {
+      "name": "cursor_ns",
+      "in": "query",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Cursor Ns"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/bags/{bag_id}/topic": {
+   "get": {
+    "tags": [
+     "bags"
+    ],
+    "summary": "Bag Topic Detail",
+    "operationId": "bag_topic_detail_api_bags__bag_id__topic_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "bag_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Bag Id"
+      }
+     },
+     {
+      "name": "name",
+      "in": "query",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Name"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/bags/{bag_id}/tf": {
+   "get": {
+    "tags": [
+     "bags"
+    ],
+    "summary": "Bag Tf",
+    "operationId": "bag_tf_api_bags__bag_id__tf_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "bag_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Bag Id"
+      }
+     },
+     {
+      "name": "cursor_ns",
+      "in": "query",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Cursor Ns"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
   "/api/diagnostics/findings": {
    "get": {
     "tags": [
@@ -1247,6 +1595,179 @@
          },
          "title": "Response Findings Api Diagnostics Findings Get"
         }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/diagnostics/profiles": {
+   "get": {
+    "tags": [
+     "diagnostics",
+     "layouts"
+    ],
+    "summary": "Profiles",
+    "operationId": "profiles_api_diagnostics_profiles_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   },
+   "post": {
+    "tags": [
+     "diagnostics",
+     "layouts"
+    ],
+    "summary": "Create Profile",
+    "operationId": "create_profile_api_diagnostics_profiles_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/Expectation"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
+  "/api/diagnostics/profiles/{profile_id}": {
+   "delete": {
+    "tags": [
+     "diagnostics",
+     "layouts"
+    ],
+    "summary": "Delete Profile",
+    "operationId": "delete_profile_api_diagnostics_profiles__profile_id__delete",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "profile_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Profile Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/diagnostics/correlate": {
+   "get": {
+    "tags": [
+     "diagnostics",
+     "layouts"
+    ],
+    "summary": "Correlate",
+    "operationId": "correlate_api_diagnostics_correlate_get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "timestamp_ns",
+      "in": "query",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "minimum": 0,
+       "title": "Timestamp Ns"
+      }
+     },
+     {
+      "name": "window_s",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "number",
+       "maximum": 300,
+       "minimum": 0.1,
+       "default": 10,
+       "title": "Window S"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
        }
       }
      },
@@ -2075,6 +2596,100 @@
     ],
     "title": "BagOpenRequest"
    },
+   "Expectation": {
+    "properties": {
+     "name": {
+      "type": "string",
+      "maxLength": 80,
+      "minLength": 1,
+      "title": "Name"
+     },
+     "topic": {
+      "type": "string",
+      "pattern": "^/[A-Za-z0-9_/]+$",
+      "title": "Topic"
+     },
+     "field": {
+      "type": "string",
+      "maxLength": 160,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_.]+$",
+      "title": "Field"
+     },
+     "minimum": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Minimum"
+     },
+     "maximum": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Maximum"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "name",
+     "topic",
+     "field"
+    ],
+    "title": "Expectation"
+   },
+   "ExportRequest": {
+    "properties": {
+     "topic": {
+      "type": "string",
+      "title": "Topic"
+     },
+     "start_ns": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Start Ns"
+     },
+     "end_ns": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "End Ns"
+     },
+     "limit": {
+      "type": "integer",
+      "maximum": 10000.0,
+      "minimum": 1.0,
+      "title": "Limit",
+      "default": 10000
+     }
+    },
+    "type": "object",
+    "required": [
+     "topic"
+    ],
+    "title": "ExportRequest"
+   },
    "Finding": {
     "properties": {
      "severity": {
@@ -2109,6 +2724,39 @@
       "type": "array",
       "title": "Suggested Checks",
       "default": []
+     },
+     "timestamp_ns": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Timestamp Ns"
+     },
+     "topic": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Topic"
+     },
+     "source_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Source Id"
      }
     },
     "type": "object",

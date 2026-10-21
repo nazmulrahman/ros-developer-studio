@@ -3,7 +3,7 @@ import { Icon } from "../components/Icon";
 import { Gate } from "../components/Gate";
 import { JsonTree } from "../components/JsonTree";
 import { Empty, Notice, StatusBadge, Tile } from "../components/ui";
-import { api } from "../services/api";
+import { api, topicApi } from "../services/api";
 import { useApp, useDock } from "../services/app";
 import { fmtBps, fmtBytes, fmtClock, fmtDur, fmtHz, fmtNum } from "../services/format";
 import { useChannel, useLive } from "../services/live";
@@ -37,13 +37,15 @@ export function InspectorPage() {
   useEffect(() => {
     setStats(null); setMsg(null); setWatchErr(null); setDetail(null); setDetailErr(null);
     if (!topic) return;
-    api<TopicDetail>(`/api/live/topic?name=${encodeURIComponent(topic)}`).then(setDetail).catch(e => setDetailErr(String(e.message ?? e)));
+    topicApi<TopicDetail>(topic).then(setDetail).catch(e => setDetailErr(String(e.message ?? e)));
     return () => unwatch(topic);
   }, [topic, unwatch]);
   useEffect(() => { if (topic) watch(topic, { hz: rate, payload: true }); }, [topic, rate, watch, status?.agent.state]);
-  useEffect(() => { if (topic && known) api<TopicDetail>(`/api/live/topic?name=${encodeURIComponent(topic)}`).then(setDetail).catch(() => {}); }, [graph.updated]); // eslint-disable-line
+  useEffect(() => { if (topic && known) topicApi<TopicDetail>(topic).then(setDetail).catch(() => {}); }, [graph.updated]); // eslint-disable-line
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 500); return () => clearInterval(t); }, []);
 
+  useChannel("source_reset", () => setMsg(null));
+  useChannel("sample_missing", (e: {topic:string}) => {if(e.topic===topic) setMsg(null);});
   useChannel("sample", (e: SampleEvent) => { if (e.topic === topic && !pausedRef.current) setMsg(e); });
   useChannel("stats", (e: TopicStatsEvent) => { if (e.topic === topic) setStats(e); });
   useChannel("watch_error", (e: { topic: string; code: string; message: string }) => { if (e.topic === topic) setWatchErr(`${e.message}`); });

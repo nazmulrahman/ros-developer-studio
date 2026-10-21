@@ -12,16 +12,16 @@ function XY({ points, path = false }: { points: number[][]; path?: boolean }) {
   const convert = ([x, y]: number[]) => [160 + (x - cx) * 290 / span, 160 - (y - cy) * 290 / span];
   const origin = convert([0, 0]); const converted = valid.map(convert);
   return <><svg className="sensor-canvas" viewBox="0 0 320 320" role="img" aria-label={path ? "Odometry XY trace in message frame" : "Laser scan in sensor frame"}>
-    <path d={`M0 ${origin[1]} H320 M${origin[0]} 0 V320`} stroke="#334454" strokeWidth="1" />
-    {path ? <polyline points={converted.map(p => p.join(",")).join(" ")} fill="none" stroke="#49B6E8" strokeWidth="1.5" /> : converted.map((p, i) => <circle key={i} cx={p[0]} cy={p[1]} r="1.5" fill="#34C995" />)}
-    <circle cx={origin[0]} cy={origin[1]} r="3" fill="#F5AD57" /><text x="8" y="310" fill="#93A6B7" fontSize="11">+X right · +Y up · span {span.toFixed(2)} m</text></svg>{!valid.length && <p className="muted">No valid points in this sample.</p>}</>;
+    <path d={`M0 ${origin[1]} H320 M${origin[0]} 0 V320`} stroke="#3A3F5A" strokeWidth="1" />
+    {path ? <polyline points={converted.map(p => p.join(",")).join(" ")} fill="none" stroke="#FF4F6E" strokeWidth="1.5" /> : converted.map((p, i) => <circle key={i} cx={p[0]} cy={p[1]} r="1.5" fill="#3DDC97" />)}
+    <circle cx={origin[0]} cy={origin[1]} r="3" fill="#FFBE3D" /><text x="8" y="310" fill="#8E94AB" fontSize="11">+X right · +Y up · span {span.toFixed(2)} m</text></svg>{!valid.length && <p className="muted">No valid points in this sample.</p>}</>;
 }
 function Vector({ label, value, unit }: { label: string; value: any; unit: string }) { return <div className="ep"><strong>{label}</strong><div className="mono">x {number(value?.x)} · y {number(value?.y)} · z {number(value?.z)} {unit}</div></div>; }
 function Attitude({ quaternion, unavailable = false }: { quaternion: any; unavailable?: boolean }) {
   const angles = unavailable ? null : orientation(quaternion);
   return <><div className="tiles">{(["roll", "pitch", "yaw"] as const).map(k => <Tile key={k} label={k} value={angles ? `${number(angles[k], 1)}°` : "—"} />)}</div>
     {!angles && <p className="muted">Orientation unavailable (invalid quaternion or covariance marks it absent).</p>}
-    {angles && <svg viewBox="0 0 300 100" className="attitude" role="img" aria-label="Roll and pitch indicator"><g transform={`translate(150 ${50 + Math.max(-40, Math.min(40, angles.pitch))}) rotate(${-angles.roll})`}><line x1="-80" y1="0" x2="80" y2="0" stroke="#49B6E8" strokeWidth="3" /></g><path d="M125 50 H145 M155 50 H175 M150 45 V55" stroke="#F5AD57" strokeWidth="2" /></svg>}</>;
+    {angles && <svg viewBox="0 0 300 100" className="attitude" role="img" aria-label="Roll and pitch indicator"><g transform={`translate(150 ${50 + Math.max(-40, Math.min(40, angles.pitch))}) rotate(${-angles.roll})`}><line x1="-80" y1="0" x2="80" y2="0" stroke="#FF4F6E" strokeWidth="3" /></g><path d="M125 50 H145 M155 50 H175 M150 45 V55" stroke="#FFBE3D" strokeWidth="2" /></svg>}</>;
 }
 function Odom({ data, sample }: { data: any; sample: NormalizedSample }) {
   const [trace, setTrace] = useState<{ frame: string; points: number[][] }>({ frame: "", points: [] });

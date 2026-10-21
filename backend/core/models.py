@@ -125,6 +125,9 @@ class Finding(BaseModel):
     evidence: str
     possible_causes: list[str] = []
     suggested_checks: list[str] = []
+    timestamp_ns: int | None = None
+    topic: str | None = None
+    source_id: str | None = None
 
 
 class SessionInfo(BaseModel):

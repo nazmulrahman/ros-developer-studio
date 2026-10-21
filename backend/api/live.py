@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from ..core.auth import require_auth
 from ..core.models import Graph, SeriesRequest, SeriesResponse, SubscribeRequest, TopicInfo, TopicStats
 from ..data_sources.live import AgentError, AgentUnavailable
-from .common import not_implemented
 
 router = APIRouter(prefix="/api", tags=["live"], dependencies=[Depends(require_auth)])
 _STATUS = {"topic_not_found": 404, "node_not_found": 404, "unsupported_type": 422, "ros_unavailable": 503, "parameter_timeout": 504}
@@ -77,7 +76,14 @@ def live_tf(request: Request):
     return request.app.state.hub.tf_tree.snapshot(stale_after_s=stale_after)
 
 @router.get("/live/logs")
-def live_logs(level: str | None = None, limit: int = 500): not_implemented(5, "/rosout log buffer")
+def live_logs(request: Request, level: int | None = Query(None, ge=0, le=50), limit: int = Query(500, ge=1, le=2000),
+              since_ns: int | None = None, until_ns: int | None = None, search: str | None = Query(None, max_length=200)):
+    rows = list(request.app.state.hub.logs)
+    if level is not None: rows = [r for r in rows if r["level"] == level]
+    if since_ns is not None: rows = [r for r in rows if r["timestamp_ns"] is not None and r["timestamp_ns"] >= since_ns]
+    if until_ns is not None: rows = [r for r in rows if r["timestamp_ns"] is not None and r["timestamp_ns"] <= until_ns]
+    if search: rows = [r for r in rows if search.casefold() in (r["name"] + " " + r["message"]).casefold()]
+    return {"rows": rows[-limit:], "capacity": 5000, "capturing": "/rosout" in request.app.state.hub._diagnostic_topics}
 
 @router.post("/series/query", response_model=SeriesResponse)
 def series_query(req: SeriesRequest): not_implemented(4, "server-side series query for bags (live plots are client-side in this phase)")

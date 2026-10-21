@@ -1,4 +1,3 @@
-import { Icon } from "./Icon";
 import type { LiveStatus, Mode } from "../types/api";
 import type { WsState } from "../services/live";
 
@@ -21,7 +20,6 @@ export function TopBar({ mode, onMode, wsState, status, token, onToken }: {
     : ["ok", `${r.distro ?? "unknown distro"} · domain ${r.domain_id} · discovery active`];
   return (
     <header className="topbar">
-      <span className="brand"><Icon name="graph" size={18} />ROS Developer Studio</span>
       <div className="seg" role="group" aria-label="Mode">
         <button aria-pressed={mode === "live"} onClick={() => onMode("live")}>Live</button>
         <button aria-pressed={mode === "offline"} onClick={() => onMode("offline")}>Offline bag</button>
@@ -31,6 +29,6 @@ export function TopBar({ mode, onMode, wsState, status, token, onToken }: {
       <Pill kind={be[0]}>Backend: {be[1]}</Pill>
       <Pill kind={ag[0]} title={a?.last_error ?? a?.url ?? ""}>Agent: {ag[1]}</Pill>
       <Pill kind={ros[0]} title={r?.error ?? r?.discovery_error ?? (r?.rmw ? `RMW: ${r.rmw}` : "")}>ROS: {ros[1]}</Pill>
-      <input className="mono" type="password" placeholder="access token" value={token} onChange={e => onToken(e.target.value)} style={{ width: 150 }} aria-label="Access token" />
+      <input className="mono token" type="password" placeholder="Access token" value={token} onChange={e => onToken(e.target.value)} aria-label="Access token" />
     </header>);
 }
